@@ -214,6 +214,16 @@ namespace OpenRA.Platforms.Default
 
 			EnsureCursor(device);
 
+			// The controller layout uses one button to both select and give orders, which only works with the
+			// Classic mouse style (Modern needs a right click for orders, e.g. to deploy the MCV).
+			// Keep it in effect while a controller is connected, even if the welcome screen or settings changed it.
+			var gameSettings = Game.Settings?.Game;
+			if (gameSettings != null && gameSettings.MouseControlStyle != MouseControlStyle.Classic)
+			{
+				gameSettings.MouseControlStyle = MouseControlStyle.Classic;
+				Log.Write("debug", "Gamepad connected: switched mouse control style to Classic");
+			}
+
 			// Combine the input from all connected controllers
 			var leftStick = Vector2.Zero;
 			var rightStick = Vector2.Zero;
