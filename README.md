@@ -27,8 +27,43 @@ include any Red Alert game files: on first launch the game's content installer d
 
 Requirements: a 64-bit ARM phone (arm64-v8a) running Android 7.0 or newer with OpenGL ES 3.0.
 The APK is signed with a debug key, so Android may show an "unknown developer" warning.
-It is built from the code in this repository; the controller layout is listed in
-[`OpenRA.Android/README.md`](OpenRA.Android/README.md#controls).
+It is built from the code in this repository; see [Controls](#controls) below for the controller layout.
+
+## Controls
+
+The controls follow the PlayStation version of Red Alert: one button selects and gives orders, and the
+build sidebar is opened with Triangle. Tested with a GameSir G8+; any Android-compatible Bluetooth or USB
+controller should work.
+
+| PlayStation | Xbox | Action |
+|---|---|---|
+| Left stick | Left stick | **Map:** move the cursor. Push it against a screen edge (or the sidebar / command bar) to scroll the map. **Menus, sidebar, command bar:** the cursor is locked to the buttons; push in a direction to step to the next one |
+| D-pad | D-pad | Same as the left stick (one button per press in menus) |
+| Right stick | Right stick | Scroll the map (scrolls lists in menus) |
+| Cross | A | Select units and give orders (move, attack, deploy, place buildings). Hold and move to drag a selection box. Tap twice on a unit to select all units of that type |
+| Circle | B | **Map:** cancel the current mode (building placement, sell, attack-move...), otherwise jump into the command bar. **Command bar:** back to the map. **Sidebar:** hold / cancel production. **Menus:** back |
+| Square | X | Cycle repair, sell, power down, then back to normal |
+| Triangle | Y | Jump into the build sidebar; press again to return to the map |
+| L1 | LB | Next build tab (buildings, defences, infantry, vehicles, aircraft, naval) |
+| R1 (hold) | RB (hold) | Fast cursor and faster map scrolling |
+| L2 | LT | Select all units on screen |
+| R2 | RT | Attack-move, then Cross / A on the target |
+| L3 (press left stick) | LS | Deploy (e.g. unpack the MCV into a construction yard) |
+| R3 (press right stick) | RS | Deselect |
+| Start / Options | Menu | Game menu (pause, settings, surrender) |
+| Select / Share | View | Jump to your base |
+| Phone back button | | Same as Escape |
+
+**Getting started in a match:** the cursor starts in the middle of the screen next to your MCV. Press Cross / A
+on the MCV to select it and again to deploy it (or press L3). Press Triangle / Y to jump into the build sidebar,
+pick a building with Cross / A and wait for it to finish. Pick it up with Cross / A: the cursor jumps back to the
+middle of the map so you can place it.
+
+Notes:
+- The sidebar and command bar are see-through while the cursor is on the map, and solid while you are using them.
+- In menus, hold Cross / A to drag sliders and scrollbars.
+- Touch still works: a tap is a left click.
+- With a controller connected the game always uses OpenRA's "Classic" mouse style, which the controls rely on.
 
 ## Layout
 

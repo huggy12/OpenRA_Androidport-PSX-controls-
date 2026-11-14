@@ -5,26 +5,7 @@ console-style Bluetooth controller controls, modelled on the PlayStation version
 
 ## Controls
 
-| Controller (Xbox / PlayStation)  | Action |
-|----------------------------------|--------|
-| Left stick                       | Menus: the cursor is locked to buttons and any push steps between them. Map: moves the cursor; it can't enter the sidebar (incl. radar) or command bar, and pushing against them or a screen edge scrolls the map |
-| D-pad                            | Same as the left stick, one button per press in menus |
-| Right stick                      | Scroll the map (scrolls lists in menus) |
-| A / Cross                        | Select / give orders. Hold and move to drag a selection box. Tap twice to select all units of that type |
-| B / Circle                       | Menus: back. Map: cancel the current mode (placing a building, sell, attack-move...) or jump to the command bar. Command bar: back to the map. Sidebar: hold / cancel production |
-| X / Square                       | Cycle repair, sell, power down, then back to normal |
-| Y / Triangle                     | Jump the cursor into the sidebar, press again to return to the map |
-| L1                               | Next build tab |
-| R1 (hold)                        | Fast cursor and faster map scrolling |
-| L2                               | Select all units on screen |
-| R2                               | Attack-move (then A / Cross on the target) |
-| L3 (left stick click)            | Deploy (e.g. MCV) |
-| R3 (right stick click)           | Deselect |
-| Start                            | Game menu |
-| Back / Select / Share            | Jump to base |
-| Phone back button                | Same as Escape |
-
-In menus, hold A / Cross to drag sliders or scrollbars freely. Touch also works: a tap is a left click. Picking up a finished building moves the cursor to the middle of the screen so you can place it, and each match starts with the cursor in the middle. The sidebar and command bar turn translucent while the cursor is on the map.
+The controller layout is described in the [main README](../README.md#controls).
 
 ## First launch
 
