@@ -4,6 +4,10 @@ A personal port of [OpenRA](https://github.com/OpenRA/OpenRA) to Android, based 
 [`b4d95a5`](https://github.com/OpenRA/OpenRA/commit/b4d95a56717d8d0070f195e343f6c2728ce87900) (November 2026), playing the Red Alert mod
 with a Bluetooth controller using console-style controls inspired by the PlayStation version of Red Alert.
 
+![Gameplay preview: a skirmish on a phone, controlled with a Bluetooth controller](docs/preview.gif)
+
+*Skirmish on a vivo phone (Snapdragon, Android 16) with a GameSir G8+ controller.*
+
 This is an unofficial fork. It is not endorsed by or affiliated with the OpenRA project or EA, and it does not
 include any Red Alert game files: on first launch the game's content installer downloads the freeware files.
 
