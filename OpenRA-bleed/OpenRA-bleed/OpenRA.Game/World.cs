@@ -169,6 +169,9 @@ namespace OpenRA
 		public readonly ISelection Selection;
 		public readonly IControlGroups ControlGroups;
 
+		/// <summary>True when no special input mode (building placement, sell, attack-move...) is active.</summary>
+		public bool IsDefaultInputMode => orderGenerator == null || orderGenerator.GetType() == defaultOrderGeneratorType;
+
 		public void CancelInputMode() { OrderGenerator = (IOrderGenerator)defaultOrderGeneratorType.GetConstructor([typeof(World)])?.Invoke([this]); }
 
 		public bool RulesContainTemporaryBlocker { get; }

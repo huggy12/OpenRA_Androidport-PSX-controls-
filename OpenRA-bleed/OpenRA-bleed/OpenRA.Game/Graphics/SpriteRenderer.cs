@@ -175,19 +175,22 @@ namespace OpenRA.Graphics
 			return pal.TextureIndex;
 		}
 
+		/// <summary>Multiplies the opacity of everything drawn (used to fade inactive UI panels).</summary>
+		public float AlphaMultiplier = 1f;
+
 		internal void DrawSprite(Sprite s, int paletteTextureIndex, in Vector3 location, in Vector3 scale, float rotation = 0f)
 		{
 			var samplers = SetRenderStateForSprite(s);
-			Util.FastCreateQuad(vertices, location + scale * s.Offset, s, samplers, paletteTextureIndex, vertexCount, scale * s.Size, Vector3.One,
-								1f, rotation);
+			Util.FastCreateQuad(vertices, location + scale * s.Offset, s, samplers, paletteTextureIndex, vertexCount, scale * s.Size, AlphaMultiplier * Vector3.One,
+								AlphaMultiplier, rotation);
 			TrackQuad(s.BlendMode);
 		}
 
 		internal void DrawSprite(Sprite s, int paletteTextureIndex, in Vector3 location, float scale, float rotation = 0f)
 		{
 			var samplers = SetRenderStateForSprite(s);
-			Util.FastCreateQuad(vertices, location + scale * s.Offset, s, samplers, paletteTextureIndex, vertexCount, scale * s.Size, Vector3.One,
-								1f, rotation);
+			Util.FastCreateQuad(vertices, location + scale * s.Offset, s, samplers, paletteTextureIndex, vertexCount, scale * s.Size, AlphaMultiplier * Vector3.One,
+								AlphaMultiplier, rotation);
 			TrackQuad(s.BlendMode);
 		}
 
@@ -200,8 +203,8 @@ namespace OpenRA.Graphics
 			float rotation = 0f)
 		{
 			var samplers = SetRenderStateForSprite(s);
-			Util.FastCreateQuad(vertices, location + scale * s.Offset, s, samplers, paletteTextureIndex, vertexCount, scale * s.Size, tint, alpha,
-								rotation);
+			Util.FastCreateQuad(vertices, location + scale * s.Offset, s, samplers, paletteTextureIndex, vertexCount, scale * s.Size, AlphaMultiplier * tint,
+								AlphaMultiplier * alpha, rotation);
 			TrackQuad(s.BlendMode);
 		}
 
@@ -214,7 +217,7 @@ namespace OpenRA.Graphics
 		internal void DrawSprite(Sprite s, int paletteTextureIndex, in Vector3 a, in Vector3 b, in Vector3 c, in Vector3 d, in Vector3 tint, float alpha)
 		{
 			var samplers = SetRenderStateForSprite(s);
-			Util.FastCreateQuad(vertices, a, b, c, d, s, samplers, paletteTextureIndex, tint, alpha, vertexCount);
+			Util.FastCreateQuad(vertices, a, b, c, d, s, samplers, paletteTextureIndex, AlphaMultiplier * tint, AlphaMultiplier * alpha, vertexCount);
 			TrackQuad(s.BlendMode);
 		}
 

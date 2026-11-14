@@ -1,3 +1,18 @@
+CycleOrderModes: F13
+	Description: hotkey-description-cycleordermodes
+	Types: OrderGenerator
+	Contexts: player
+
+NextProductionTab: PAGEDOWN
+	Description: hotkey-description-nextproductiontab
+	Types: Production
+	Contexts: player
+
+PreviousProductionTab: PAGEUP
+	Description: hotkey-description-previousproductiontab
+	Types: Production
+	Contexts: player
+
 ProductionTypeBuilding: E
 	Description: hotkey-description-productiontypebuilding
 	Types: Production

@@ -33,7 +33,11 @@ namespace OpenRA.Platforms.Default
 			None = 0,
 			DebugMessagesCallback = 1,
 			ESReadFormatBGRA = 2,
+			ESTextureFormatBGRA = 4,
 		}
+
+		/// <summary>True when BGRA texture data must be swizzled to RGBA before upload (GLES without BGRA support).</summary>
+		public static bool RequiresBGRASwizzle => Profile == GLProfile.Embedded && !Features.HasFlag(GLFeatures.ESTextureFormatBGRA);
 
 		public static GLProfile Profile { get; private set; }
 		public static GLFeatures Features { get; private set; }
@@ -688,11 +692,17 @@ namespace OpenRA.Platforms.Default
 
 				// Core features are defined as the shared feature set of GL 3.2 and (GLES 3 + derivatives, BGRA extensions)
 				var hasBGRA = SDL.SDL_GL_ExtensionSupported("GL_EXT_texture_format_BGRA8888") == SDL.SDL_bool.SDL_TRUE;
-				var hasDerivatives = SDL.SDL_GL_ExtensionSupported("GL_OES_standard_derivatives") == SDL.SDL_bool.SDL_TRUE;
-				if (Version.Contains(" ES") && hasBGRA && hasDerivatives && major >= 3)
+
+				// Derivatives are a core feature of GLES 3.0, but many Android drivers don't advertise the GLES 2 extension
+				var hasDerivatives = Platform.IsAndroid || SDL.SDL_GL_ExtensionSupported("GL_OES_standard_derivatives") == SDL.SDL_bool.SDL_TRUE;
+
+				// Android devices without the BGRA extension fall back to swizzling texture data on upload
+				if (Version.Contains(" ES") && (hasBGRA || Platform.IsAndroid) && hasDerivatives && major >= 3)
 				{
 					hasValidConfiguration = true;
 					Profile = GLProfile.Embedded;
+					if (hasBGRA)
+						Features |= GLFeatures.ESTextureFormatBGRA;
 					if (SDL.SDL_GL_ExtensionSupported("GL_EXT_read_format_bgra") == SDL.SDL_bool.SDL_TRUE)
 						Features |= GLFeatures.ESReadFormatBGRA;
 				}
@@ -701,6 +711,8 @@ namespace OpenRA.Platforms.Default
 					hasValidConfiguration = true;
 					Profile = GLProfile.Modern;
 				}
+
+				Console.WriteLine($"OpenGL features: {Features}");
 
 				// Debug callbacks were introduced in GL 4.3
 				var hasDebugMessagesCallback = SDL.SDL_GL_ExtensionSupported("GL_KHR_debug") == SDL.SDL_bool.SDL_TRUE;

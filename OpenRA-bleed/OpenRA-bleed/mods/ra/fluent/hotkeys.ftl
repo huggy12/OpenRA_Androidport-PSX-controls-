@@ -1,4 +1,7 @@
 ## hotkeys.yaml
+hotkey-description-cycleordermodes = Cycle repair / sell / power down
+hotkey-description-nextproductiontab = Next tab
+hotkey-description-previousproductiontab = Previous tab
 hotkey-description-productiontypebuilding = Building Tab
 hotkey-description-productiontypedefense = Defense Tab
 hotkey-description-productiontypeinfantry = Infantry Tab

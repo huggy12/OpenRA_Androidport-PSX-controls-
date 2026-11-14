@@ -1,0 +1,21 @@
+# Local toolchain and downloads (recreate with scripts/setup-toolchain.sh)
+/tools/
+/orig/
+/diag/
+/*.zip
+
+# Build output (recreate with native/build-native.sh and OpenRA.Android/build-apk.sh)
+/native/build/
+/native/out/
+/native/*.log
+/OpenRA.Android/bin/
+/OpenRA.Android/obj/
+*.apk
+
+# Local test output
+/build.log
+/logcat*.txt
+/screen.png
+
+# Red Alert game content must never be committed
+Support/

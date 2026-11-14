@@ -28,6 +28,10 @@ namespace OpenRA
 
 		public int2 GetSizeRange(WorldViewport distance)
 		{
+			// Phone screens are small, so show a little less of the battlefield (zoom in further) at the closest setting
+			if (Platform.IsAndroid && distance == WorldViewport.Close)
+				return new int2(CloseWindowHeights.X * 5 / 6, CloseWindowHeights.Y * 5 / 6);
+
 			return distance == WorldViewport.Close ? CloseWindowHeights
 				: distance == WorldViewport.Medium ? MediumWindowHeights
 				: FarWindowHeights;

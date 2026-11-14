@@ -240,6 +240,8 @@ namespace OpenRA.Mods.Common.Widgets
 			OnMouseDown = other.OnMouseDown;
 		}
 
+		public override bool GamepadBlocksInput => true;
+
 		public override bool HandleMouseInput(MouseInput mi)
 		{
 			if (mi.Event == MouseInputEvent.Move)

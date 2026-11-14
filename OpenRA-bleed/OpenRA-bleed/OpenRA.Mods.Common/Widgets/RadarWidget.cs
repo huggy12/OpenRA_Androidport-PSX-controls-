@@ -323,6 +323,8 @@ namespace OpenRA.Mods.Common.Widgets
 			return modData.Cursors.ContainsKey(cursor + "-minimap") ? cursor + "-minimap" : cursor;
 		}
 
+		public override bool GamepadBlocksInput => true;
+
 		public override bool HandleMouseInput(MouseInput mi)
 		{
 			if (!mapRect.Contains(mi.Location))

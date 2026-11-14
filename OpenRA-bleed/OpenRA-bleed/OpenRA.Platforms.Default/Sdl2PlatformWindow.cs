@@ -149,9 +149,19 @@ namespace OpenRA.Platforms.Default
 				// Prefer standard GL over GLES provided by the native driver
 				var testProfiles = new List<GLProfile> { GLProfile.ANGLE, GLProfile.Modern, GLProfile.Embedded };
 				var errorLog = new List<string>();
-				supportedProfiles = testProfiles
-					.Where(profile => CanCreateGLWindow(profile, errorLog))
-					.ToArray();
+
+				// Android only supports a single GLES window and does not tolerate the
+				// create/destroy probing below, so assume GLES 3.0 which all supported devices provide.
+				if (Platform.IsAndroid)
+				{
+					supportedProfiles = [GLProfile.Embedded];
+					SDL.SDL_SetHint("SDL_ANDROID_TRAP_BACK_BUTTON", "1");
+					SDL.SDL_SetHint("SDL_IOS_ORIENTATIONS", "LandscapeLeft LandscapeRight");
+				}
+				else
+					supportedProfiles = testProfiles
+						.Where(profile => CanCreateGLWindow(profile, errorLog))
+						.ToArray();
 
 				if (supportedProfiles.Length == 0)
 				{
@@ -165,7 +175,7 @@ namespace OpenRA.Platforms.Default
 
 				// Note: This must be called after the CanCreateGLWindow checks above,
 				// which needs to create and destroy its own SDL contexts as a workaround for specific buggy drivers
-				if (SDL.SDL_Init(SDL.SDL_INIT_VIDEO) != 0)
+				if (SDL.SDL_Init(SDL.SDL_INIT_VIDEO | SDL.SDL_INIT_GAMECONTROLLER) != 0)
 					Log.Write("graphics", $"SDL initialisation failed: {SDL.SDL_GetError()}");
 
 				SetSDLAttributes(profile);
@@ -186,6 +196,16 @@ namespace OpenRA.Platforms.Default
 					if (scaleVariable == null || !float.TryParse(scaleVariable, NumberStyles.Float, NumberFormatInfo.InvariantInfo, out windowScale) || windowScale <= 0)
 						if (SDL.SDL_GetDisplayDPI(videoDisplay, out var ddpi, out _, out _) == 0)
 							windowScale = ddpi / 96;
+				}
+				else if (Platform.IsAndroid)
+				{
+					// Phone screens are small with very high pixel densities, so scale the UI up so that
+					// the effective (UI) resolution is roughly 540 pixels tall. Dialogs designed for larger
+					// screens are shrunk to fit (see Widget.Initialize).
+					// Launch the game with OPENRA_DISPLAY_SCALE to force a specific scaling factor
+					var scaleVariable = Environment.GetEnvironmentVariable("OPENRA_DISPLAY_SCALE");
+					if (scaleVariable == null || !float.TryParse(scaleVariable, NumberStyles.Float, NumberFormatInfo.InvariantInfo, out windowScale) || windowScale <= 0)
+						windowScale = Math.Max(1f, Math.Min(display.w, display.h) / 540f);
 				}
 				else if (Platform.CurrentPlatform == PlatformType.Linux)
 				{
@@ -215,7 +235,12 @@ namespace OpenRA.Platforms.Default
 				}
 
 				Console.WriteLine($"Desktop resolution: {display.w}x{display.h}");
-				if (requestEffectiveWindowSize.Width == 0 && requestEffectiveWindowSize.Height == 0)
+				if (Platform.IsAndroid)
+				{
+					// Android windows always fill the (landscape) screen
+					surfaceSize = windowSize = new Size(Math.Max(display.w, display.h), Math.Min(display.w, display.h));
+				}
+				else if (requestEffectiveWindowSize.Width == 0 && requestEffectiveWindowSize.Height == 0)
 				{
 					Console.WriteLine("No custom resolution provided, using desktop resolution");
 					surfaceSize = windowSize = new Size(display.w, display.h);
@@ -225,16 +250,28 @@ namespace OpenRA.Platforms.Default
 
 				Console.WriteLine($"Using resolution: {windowSize.Width}x{windowSize.Height}");
 
-				const SDL.SDL_WindowFlags WindowFlags = SDL.SDL_WindowFlags.SDL_WINDOW_OPENGL | SDL.SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI;
+				var windowFlags = SDL.SDL_WindowFlags.SDL_WINDOW_OPENGL | SDL.SDL_WindowFlags.SDL_WINDOW_ALLOW_HIGHDPI;
+				if (Platform.IsAndroid)
+					windowFlags |= SDL.SDL_WindowFlags.SDL_WINDOW_FULLSCREEN;
 
 				// HiDPI doesn't work properly on OSX with (legacy) fullscreen mode
 				if (Platform.CurrentPlatform == PlatformType.OSX && windowMode == WindowMode.Fullscreen)
 					SDL.SDL_SetHint(SDL.SDL_HINT_VIDEO_HIGHDPI_DISABLED, "1");
 
 				window = SDL.SDL_CreateWindow("OpenRA", SDL.SDL_WINDOWPOS_CENTERED_DISPLAY(videoDisplay), SDL.SDL_WINDOWPOS_CENTERED_DISPLAY(videoDisplay),
-					windowSize.Width, windowSize.Height, WindowFlags);
+					windowSize.Width, windowSize.Height, windowFlags);
 
-				if (Platform.CurrentPlatform == PlatformType.Linux)
+				if (Platform.IsAndroid)
+				{
+					// Use the real drawable size, which may differ from the display mode (e.g. display cutouts)
+					SDL.SDL_GL_GetDrawableSize(window, out var drawableWidth, out var drawableHeight);
+					if (drawableWidth > 0 && drawableHeight > 0)
+						surfaceSize = windowSize = new Size(drawableWidth, drawableHeight);
+
+					Console.WriteLine($"Android drawable size: {surfaceSize.Width}x{surfaceSize.Height}");
+				}
+
+				if (Platform.CurrentPlatform == PlatformType.Linux && !Platform.IsAndroid)
 				{
 					// The KDE task switcher limits itself to the 128px icon unless we
 					// set an X11 _KDE_NET_WM_DESKTOP_FILE property on the window
@@ -343,7 +380,9 @@ namespace OpenRA.Platforms.Default
 			// The calling thread will then have more time to process other tasks, since rendering happens in parallel.
 			// If the calling thread is the main game thread, this means it can run more logic and render ticks.
 			// This is disabled when running in windowed mode on Windows because it breaks the ability to minimize/restore the window.
-			if (Platform.CurrentPlatform == PlatformType.Windows && windowMode == WindowMode.Windowed)
+			// This is also disabled on Android, where SDL must be able to restore the GL context on the
+			// main (event pumping) thread when the app returns from the background.
+			if ((Platform.CurrentPlatform == PlatformType.Windows && windowMode == WindowMode.Windowed) || Platform.IsAndroid)
 			{
 				var ctx = new Sdl2GraphicsContext(this);
 				ctx.InitializeOpenGL();
@@ -379,6 +418,11 @@ namespace OpenRA.Platforms.Default
 		public IHardwareCursor CreateHardwareCursor(string name, Size size, byte[] data, int2 hotspot, bool pixelDouble)
 		{
 			VerifyThreadAffinity();
+
+			// Android only shows hardware cursors for physical mice, but the gamepad drives a virtual cursor.
+			// Returning null makes the engine draw a software cursor instead.
+			if (Platform.IsAndroid)
+				return null;
 			try
 			{
 				// Pixel double the cursor on non-OSX if the window scale is large enough

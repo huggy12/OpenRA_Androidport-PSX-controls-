@@ -10,6 +10,7 @@
 #endregion
 
 using System;
+using System.Collections.Generic;
 using System.Linq;
 using OpenRA.Mods.Common.Traits;
 using OpenRA.Widgets;
@@ -55,7 +56,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 		}
 
 		[ObjectCreator.UseCtor]
-		public ClassicProductionLogic(Widget widget, World world)
+		public ClassicProductionLogic(Widget widget, World world, ModData modData, Dictionary<string, MiniYaml> logicArgs)
 		{
 			this.world = world;
 			palette = widget.Get<ProductionPaletteWidget>("PRODUCTION_PALETTE");
@@ -125,6 +126,33 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			foreach (var i in typesContainer.Children)
 				SetupProductionGroupButton(i as ProductionTypeButtonWidget);
 
+			// Optional hotkeys (used by gamepad shoulder buttons) to cycle between the production type tabs
+			var keyhandler = widget.GetOrNull<LogicKeyListenerWidget>("PRODUCTION_KEYHANDLER");
+			if (keyhandler != null)
+			{
+				var previousKey = new HotkeyReference();
+				var nextKey = new HotkeyReference();
+				if (logicArgs.TryGetValue("PreviousProductionTabKey", out var previousYaml))
+					previousKey = modData.Hotkeys[previousYaml.Value];
+
+				if (logicArgs.TryGetValue("NextProductionTabKey", out var nextYaml))
+					nextKey = modData.Hotkeys[nextYaml.Value];
+
+				keyhandler.AddHandler(e =>
+				{
+					if (e.Event != KeyInputEvent.Down)
+						return false;
+
+					if (previousKey.IsActivatedBy(e))
+						return CycleTab(typesContainer, true);
+
+					if (nextKey.IsActivatedBy(e))
+						return CycleTab(typesContainer, false);
+
+					return false;
+				});
+			}
+
 			var ticker = widget.Get<LogicTickerWidget>("PRODUCTION_TICKER");
 			ticker.OnTick = () =>
 			{
@@ -162,6 +190,23 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			}
 
 			SetMaximumVisibleRows(palette);
+		}
+
+		bool CycleTab(Widget typesContainer, bool reverse)
+		{
+			var buttons = typesContainer.Children
+				.OfType<ProductionTypeButtonWidget>()
+				.Where(b => !b.IsDisabled())
+				.ToList();
+
+			if (buttons.Count == 0)
+				return false;
+
+			var current = buttons.FindIndex(b => b.IsHighlighted());
+			var next = current < 0 ? 0 : (current + (reverse ? buttons.Count - 1 : 1)) % buttons.Count;
+			buttons[next].OnClick();
+			Game.Sound.PlayNotification(world.Map.Rules, null, "Sounds", buttons[next].ClickSound, null);
+			return true;
 		}
 
 		static void SetMaximumVisibleRows(ProductionPaletteWidget productionPalette)

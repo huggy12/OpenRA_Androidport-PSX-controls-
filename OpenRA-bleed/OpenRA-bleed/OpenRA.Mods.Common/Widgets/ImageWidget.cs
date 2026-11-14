@@ -74,6 +74,8 @@ namespace OpenRA.Mods.Common.Widgets
 			WidgetUtils.DrawSprite(GetSprite(), RenderOrigin.ToVector2());
 		}
 
+		public override bool GamepadBlocksInput => !ClickThrough;
+
 		public override bool HandleMouseInput(MouseInput mi)
 		{
 			return !ClickThrough && RenderBounds.Contains(mi.Location);

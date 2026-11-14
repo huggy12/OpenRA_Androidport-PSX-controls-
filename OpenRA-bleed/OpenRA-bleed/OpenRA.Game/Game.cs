@@ -250,12 +250,19 @@ namespace OpenRA
 			// - We can remove any fragmentation in the LOH caused by temporary loading garbage.
 			// - A loading screen is visible, so a delay won't matter to the user.
 			//   Much better to clean up now then to drop frames during gameplay for GC pauses.
-			GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
+			// The Mono runtime used on Android does not support configuring LOH compaction
+			if (!Platform.IsAndroid)
+				GCSettings.LargeObjectHeapCompactionMode = GCLargeObjectHeapCompactionMode.CompactOnce;
+
 			GC.Collect();
 
 			// PostLoadComplete is designed for anything that should trigger at the very end of loading.
 			// e.g. audio notifications that the game is starting.
 			OrderManager.World.PostLoadComplete(worldRenderer);
+
+			// Start the gamepad cursor in the middle of the screen
+			if (type == WorldType.Regular)
+				GamepadNavigation.RequestCursorWarp(new int2(Renderer.Resolution.Width / 2, Renderer.Resolution.Height / 2));
 
 			AfterGameStart();
 		}
@@ -462,8 +469,10 @@ namespace OpenRA
 		{
 			var rendererPath = Path.Combine(Platform.BinDir, "OpenRA.Platforms." + platformName + ".dll");
 
-			var loader = new AssemblyLoader(rendererPath);
-			var platformType = loader.LoadDefaultAssembly().GetTypes().SingleOrDefault(t => typeof(IPlatform).IsAssignableFrom(t));
+			// App hosts that bundle the platform assembly (e.g. Android) have no loose dll files on disk
+			var assembly = ObjectCreator.FindBundledAssembly(rendererPath)
+				?? new AssemblyLoader(rendererPath).LoadDefaultAssembly();
+			var platformType = assembly.GetTypes().SingleOrDefault(t => typeof(IPlatform).IsAssignableFrom(t));
 
 			if (platformType == null)
 				throw new InvalidOperationException("Platform dll must include exactly one IPlatform implementation.");

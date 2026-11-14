@@ -232,6 +232,15 @@ namespace OpenRA.Widgets
 		public ImmutableArray<ChromeLogic> LogicObjects { get; private set; }
 		public bool Visible = true;
 		public bool IgnoreMouseOver;
+
+		/// <summary>
+		/// Groups HUD widgets (e.g. "sidebar") into a gamepad zone. The free gamepad cursor can't enter a zone,
+		/// which covers the widgets' bounds extended to any nearby screen edges.
+		/// </summary>
+		public string GamepadZone = null;
+
+		/// <summary>Opacity used on Android while the cursor is outside this widget's gamepad zone (or bounds).</summary>
+		public float InactiveAlpha = 1f;
 		public bool IgnoreChildMouseOver;
 
 		// Calculated internally
@@ -257,6 +266,8 @@ namespace OpenRA.Widgets
 			IsVisible = widget.IsVisible;
 			IgnoreChildMouseOver = widget.IgnoreChildMouseOver;
 			IgnoreMouseOver = widget.IgnoreMouseOver;
+			GamepadZone = widget.GamepadZone;
+			InactiveAlpha = widget.InactiveAlpha;
 
 			defaultCursor = widget.defaultCursor;
 
@@ -310,6 +321,19 @@ namespace OpenRA.Widgets
 			var readOnlySubstitutions = new ReadOnlyDictionary<string, int>(substitutions);
 			var width = Width?.Evaluate(readOnlySubstitutions) ?? 0;
 			var height = Height?.Evaluate(readOnlySubstitutions) ?? 0;
+
+			// Android uses a larger UI scale than the layouts were designed for, so shrink fixed-size
+			// dialogs that are centred in the window to fit. Their contents mostly size relative to the dialog.
+			if (Platform.IsAndroid)
+			{
+				const int Margin = 6;
+				var window = Game.Renderer.Resolution;
+				if (Height != null && !Height.Variables.Any() && Y != null && Y.Variables.Contains("WINDOW_HEIGHT"))
+					height = Math.Min(height, window.Height - 2 * Margin);
+
+				if (Width != null && !Width.Variables.Any() && X != null && X.Variables.Contains("WINDOW_WIDTH"))
+					width = Math.Min(width, window.Width - 2 * Margin);
+			}
 
 			substitutions.Add("WIDTH", width);
 			substitutions.Add("HEIGHT", height);
@@ -433,6 +457,18 @@ namespace OpenRA.Widgets
 		/// <param name="mi">Mouse input data.</param>
 		public virtual bool HandleMouseInput(MouseInput mi) { return false; }
 
+		/// <summary>Adds the screen areas that gamepad directional navigation can snap the cursor to.</summary>
+		public virtual void GetGamepadTargets(List<Rectangle> targets) { }
+
+		/// <summary>
+		/// True if this widget consumes mouse input over its whole area, hiding any
+		/// widgets underneath it from gamepad directional navigation.
+		/// </summary>
+		public virtual bool GamepadBlocksInput => false;
+
+		/// <summary>True for areas (such as the world view) where the gamepad d-pad moves the cursor freely instead of snapping.</summary>
+		public virtual bool GamepadFreeCursor => false;
+
 		public bool HandleMouseInputOuter(MouseInput mi)
 		{
 			// Are we able to handle this event?
@@ -512,9 +548,19 @@ namespace OpenRA.Widgets
 		{
 			if (IsVisible())
 			{
+				// Fade HUD panels that the player isn't currently using (like the PlayStation version of Red Alert)
+				var fade = Platform.IsAndroid && InactiveAlpha < 1f && !GamepadNavigation.IsWidgetActive(this);
+				var spriteRenderer = Game.Renderer.SpriteRenderer;
+				var previousAlpha = spriteRenderer.AlphaMultiplier;
+				if (fade)
+					spriteRenderer.AlphaMultiplier = previousAlpha * InactiveAlpha;
+
 				Draw();
 				foreach (var child in Children)
 					child.DrawOuter();
+
+				if (fade)
+					spriteRenderer.AlphaMultiplier = previousAlpha;
 			}
 		}
 
@@ -668,6 +714,14 @@ namespace OpenRA.Widgets
 		}
 
 		public override InputWidget Clone() { return new InputWidget(this); }
+
+		public override bool GamepadBlocksInput => true;
+
+		public override void GetGamepadTargets(List<Rectangle> targets)
+		{
+			if (!IsDisabled())
+				targets.Add(EventBounds);
+		}
 	}
 
 	public class WidgetArgs : Dictionary<string, object>

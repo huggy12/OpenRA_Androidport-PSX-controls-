@@ -3,8 +3,9 @@ Container@PLAYER_WIDGETS:
 	Children:
 		Container@CHAT_ROOT:
 		LogicKeyListener@PLAYER_KEYHANDLER:
-			Logic: RemoveFromControlGroupHotkeyLogic
+			Logic: RemoveFromControlGroupHotkeyLogic, CycleOrderModesHotkeyLogic
 				RemoveFromControlGroupKey: RemoveFromControlGroup
+				CycleOrderModesKey: CycleOrderModes
 		ControlGroups@CONTROLGROUPS:
 			SelectGroupKeyPrefix: ControlGroupSelect
 			CreateGroupKeyPrefix: ControlGroupCreate
@@ -41,6 +42,8 @@ Container@PLAYER_WIDGETS:
 			Y: 10
 			Order: Descending
 		Image@COMMAND_BAR_BACKGROUND:
+			GamepadZone: commandbar
+			InactiveAlpha: 0.55
 			X: 5
 			Y: WINDOW_HEIGHT - HEIGHT - 5
 			Width: 434
@@ -49,6 +52,8 @@ Container@PLAYER_WIDGETS:
 			ImageName: background
 			ClickThrough: False
 		Container@COMMAND_BAR:
+			GamepadZone: commandbar
+			InactiveAlpha: 0.55
 			Logic: CommandBarLogic
 			X: 14
 			Y: WINDOW_HEIGHT - HEIGHT - 14
@@ -204,6 +209,8 @@ Container@PLAYER_WIDGETS:
 							ImageCollection: command-icons
 							ImageName: queue-orders
 		Container@STANCE_BAR:
+			GamepadZone: commandbar
+			InactiveAlpha: 0.55
 			Logic: StanceSelectorLogic
 			X: 294
 			Y: WINDOW_HEIGHT - HEIGHT - 14
@@ -306,6 +313,8 @@ Container@PLAYER_WIDGETS:
 					Text: label-mute-indicator
 					Contrast: true
 		Image@SIDEBAR_BACKGROUND_TOP:
+			GamepadZone: sidebar
+			InactiveAlpha: 0.55
 			Logic: AddFactionSuffixLogic
 			X: WINDOW_WIDTH - 250
 			Y: 10
@@ -423,12 +432,17 @@ Container@PLAYER_WIDGETS:
 							Height: 220
 							Skippable: false
 		Container@SIDEBAR_PRODUCTION:
+			GamepadZone: sidebar
+			InactiveAlpha: 0.55
 			Logic: ClassicProductionLogic
+				PreviousProductionTabKey: PreviousProductionTab
+				NextProductionTabKey: NextProductionTab
 			X: WINDOW_WIDTH - 250
 			Y: 300
 			Width: 238
 			Height: 250
 			Children:
+				LogicKeyListener@PRODUCTION_KEYHANDLER:
 				Container@PALETTE_BACKGROUND:
 					Children:
 						Container@ROW_TEMPLATE:
@@ -604,6 +618,8 @@ Container@PLAYER_WIDGETS:
 									ImageCollection: scrollpanel-decorations
 									ImageName: down
 		Image@SIDEBAR_MONEYBIN:
+			GamepadZone: sidebar
+			InactiveAlpha: 0.55
 			Logic: AddFactionSuffixLogic
 			X: WINDOW_WIDTH - 250
 			Y: 272

@@ -213,12 +213,16 @@ namespace OpenRA.Graphics
 			// Render cursor in software
 			var doubleCursor = graphicSettings.CursorDouble;
 			var cursorSprite = cursor.Sprites[frame % cursor.Length];
-			var cursorScale = doubleCursor ? 2 : 1;
+			var cursorScale = doubleCursor ? 2f : 1f;
 
 			// Cursor is rendered in native window coordinates
 			// Apply same scaling rules as hardware cursors
 			if (Game.Renderer.NativeWindowScale > 1.5f)
 				cursorScale *= 2;
+
+			// The gamepad cursor on a phone screen needs to be easier to see
+			if (Platform.IsAndroid)
+				cursorScale *= 1.5f;
 
 			var mousePos = isLocked ? lockedPosition : Viewport.LastMousePos;
 			renderer.RgbaSpriteRenderer.DrawSprite(cursorSprite,

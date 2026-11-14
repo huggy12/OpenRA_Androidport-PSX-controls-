@@ -26,6 +26,8 @@ namespace OpenRA.Mods.Common.Widgets
 
 		public BackgroundWidget() { }
 
+		public override bool GamepadBlocksInput => !ClickThrough;
+
 		public override bool HandleMouseInput(MouseInput mi)
 		{
 			return !ClickThrough && EventBounds.Contains(mi.Location);

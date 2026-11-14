@@ -19,6 +19,7 @@ namespace OpenRA.Platforms.Default
 	sealed class Sdl2Input
 	{
 		MouseButton lastButtonBits = MouseButton.None;
+		readonly Sdl2GamepadInput gamepad = new();
 
 		public static string GetClipboardText() { return SDL.SDL_GetClipboardText(); }
 		public static bool SetClipboardText(string text) { return SDL.SDL_SetClipboardText(text) == 0; }
@@ -69,6 +70,9 @@ namespace OpenRA.Platforms.Default
 
 			while (SDL.SDL_PollEvent(out var e) != 0)
 			{
+				if (gamepad.HandleEvent(e, device, inputHandler, mods))
+					continue;
+
 				switch (e.type)
 				{
 					case SDL.SDL_EventType.SDL_QUIT:
@@ -135,6 +139,7 @@ namespace OpenRA.Platforms.Default
 
 							var input = lockedMousePosition ?? new int2(e.button.x, e.button.y);
 							var pos = EventPosition(device, input.X, input.Y);
+							gamepad.SyncCursor(pos);
 
 							if (e.type == SDL.SDL_EventType.SDL_MOUSEBUTTONDOWN)
 								inputHandler.OnMouseInput(new MouseInput(
@@ -188,6 +193,9 @@ namespace OpenRA.Platforms.Default
 							? EventPosition(device, e.motion.xrel, e.motion.yrel)
 							: mousePos - lockedMousePosition.Value;
 
+						if (lockedMousePosition == null)
+							gamepad.SyncCursor(pos);
+
 						pendingMotion = new MouseInput(
 							MouseInputEvent.Move, lastButtonBits, pos, delta, mods, 0);
 
@@ -216,6 +224,11 @@ namespace OpenRA.Platforms.Default
 					case SDL.SDL_EventType.SDL_KEYUP:
 					{
 						var keyCode = (Keycode)e.key.keysym.sym;
+
+						// The Android back button acts as escape (open the menu / close dialogs)
+						if (Platform.IsAndroid && keyCode == Keycode.AC_BACK)
+							keyCode = Keycode.ESCAPE;
+
 						var type = e.type == SDL.SDL_EventType.SDL_KEYDOWN ?
 							KeyInputEvent.Down : KeyInputEvent.Up;
 
@@ -247,6 +260,8 @@ namespace OpenRA.Platforms.Default
 
 			if (pendingMotion != null)
 				inputHandler.OnMouseInput(pendingMotion.Value);
+
+			gamepad.Update(device, inputHandler, mods);
 		}
 	}
 }

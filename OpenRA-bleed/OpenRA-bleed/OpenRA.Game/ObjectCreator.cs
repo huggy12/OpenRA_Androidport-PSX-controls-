@@ -43,8 +43,39 @@ namespace OpenRA
 			assemblies = assemblyList.SelectMany(asm => asm.GetNamespaces().Select(ns => (asm, ns))).ToArray();
 		}
 
+		/// <summary>
+		/// Returns an already-loaded assembly matching the given dll path when the dll does not exist on disk.
+		/// This supports app hosts (e.g. Android) that bundle the mod assemblies inside the application package.
+		/// </summary>
+		public static Assembly FindBundledAssembly(string resolvedPath)
+		{
+			if (File.Exists(resolvedPath))
+				return null;
+
+			var name = Path.GetFileNameWithoutExtension(resolvedPath);
+			var loaded = AppDomain.CurrentDomain.GetAssemblies().FirstOrDefault(a => a.GetName().Name == name);
+			if (loaded != null)
+				return loaded;
+
+			try
+			{
+				return Assembly.Load(new AssemblyName(name));
+			}
+			catch
+			{
+				return null;
+			}
+		}
+
 		static void LoadAssembly(List<Assembly> assemblyList, string resolvedPath)
 		{
+			var bundled = FindBundledAssembly(resolvedPath);
+			if (bundled != null)
+			{
+				assemblyList.Add(bundled);
+				return;
+			}
+
 			// .NET doesn't provide any way of querying the metadata of an assembly without either:
 			//   (a) loading duplicate data into the application domain, breaking the world.
 			//   (b) crashing if the assembly has already been loaded.

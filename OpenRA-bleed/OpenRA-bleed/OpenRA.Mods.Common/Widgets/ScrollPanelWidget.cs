@@ -338,6 +338,8 @@ namespace OpenRA.Mods.Common.Widgets
 
 		int2 lastMouseLocation;
 
+		public override bool GamepadBlocksInput => true;
+
 		public override bool HandleMouseInput(MouseInput mi)
 		{
 			if (mi.Event == MouseInputEvent.Scroll)

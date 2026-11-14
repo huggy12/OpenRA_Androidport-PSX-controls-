@@ -273,6 +273,13 @@ namespace OpenRA.Mods.Common.Widgets
 			tooltipContainer.Value.RemoveTooltip();
 		}
 
+		public override bool GamepadBlocksInput => true;
+
+		public override void GetGamepadTargets(List<Rectangle> targets)
+		{
+			targets.AddRange(icons.Keys);
+		}
+
 		public override bool HandleMouseInput(MouseInput mi)
 		{
 			if (mi.Event == MouseInputEvent.Move)

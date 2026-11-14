@@ -37,8 +37,14 @@ namespace OpenRA
 		static string modernUserSupportPath;
 		static string userSupportPath;
 
+		/// <summary>True when running inside the Android app host. Android is otherwise treated as Linux.</summary>
+		public static bool IsAndroid => System.OperatingSystem.IsAndroid();
+
 		static PlatformType GetCurrentPlatform()
 		{
+			if (IsAndroid)
+				return PlatformType.Linux;
+
 			if (Environment.OSVersion.Platform == PlatformID.Win32NT)
 				return PlatformType.Windows;
 
@@ -68,6 +74,9 @@ namespace OpenRA
 		{
 			get
 			{
+				if (IsAndroid)
+					return $"Android {Environment.OSVersion.Version}";
+
 				if (CurrentPlatform == PlatformType.Linux)
 				{
 					var desktopType = Environment.GetEnvironmentVariable("XDG_CURRENT_DESKTOP");

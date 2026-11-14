@@ -82,6 +82,9 @@ namespace OpenRA.Mods.Common.Widgets
 			worldRenderer.World.Selection.SetRollover(rollover);
 		}
 
+		public override bool GamepadBlocksInput => true;
+		public override bool GamepadFreeCursor => true;
+
 		public override bool HandleMouseInput(MouseInput mi)
 		{
 			mousePos = worldRenderer.Viewport.ViewToWorldPx(mi.Location);

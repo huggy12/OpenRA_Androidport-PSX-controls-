@@ -261,6 +261,13 @@ namespace OpenRA.Mods.Common.Widgets
 				tooltipContainer.Value.RemoveTooltip();
 		}
 
+		public override bool GamepadBlocksInput => true;
+
+		public override void GetGamepadTargets(List<Rectangle> targets)
+		{
+			targets.AddRange(icons.Keys);
+		}
+
 		public override bool HandleMouseInput(MouseInput mi)
 		{
 			var icon = icons.Where(i => i.Key.Contains(mi.Location))
@@ -305,6 +312,9 @@ namespace OpenRA.Mods.Common.Widgets
 			if (item.Done && actor.HasTraitInfo<BuildingInfo>())
 			{
 				World.OrderGenerator = new PlaceBuildingOrderGenerator(CurrentQueue, item.Item, worldRenderer);
+
+				// Gamepad players have to move the cursor from the sidebar to the map, so start it in the middle of the screen
+				GamepadNavigation.RequestCursorWarp(new int2(Game.Renderer.Resolution.Width / 2, Game.Renderer.Resolution.Height / 2));
 				return true;
 			}
 

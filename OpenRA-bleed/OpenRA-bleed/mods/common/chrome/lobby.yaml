@@ -110,7 +110,7 @@ Background@SERVER_LOBBY:
 			X: 20
 			Y: PARENT_HEIGHT - HEIGHT - 20
 			Width: PARENT_WIDTH - 40
-			Height: 259
+			Height: PARENT_HEIGHT - 341
 			Children:
 				ScrollPanel@CHAT_DISPLAY:
 					Width: PARENT_WIDTH

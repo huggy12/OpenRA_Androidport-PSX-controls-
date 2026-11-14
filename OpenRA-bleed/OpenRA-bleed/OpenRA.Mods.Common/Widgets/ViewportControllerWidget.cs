@@ -214,7 +214,7 @@ namespace OpenRA.Mods.Common.Widgets
 					var deltaScale = Math.Min(Game.RunTime - lastScrollTime, 25f);
 
 					var length = Math.Max(1, scroll.Length());
-					scroll *= deltaScale / (25 * length) * Game.Settings.Game.ViewportEdgeScrollStep;
+					scroll *= deltaScale / (25 * length) * Game.Settings.Game.ViewportEdgeScrollStep * GamepadNavigation.ScrollSpeedMultiplier;
 
 					worldRenderer.Viewport.Scroll(scroll, false);
 					lastScrollTime = Game.RunTime;
@@ -306,6 +306,9 @@ namespace OpenRA.Mods.Common.Widgets
 		bool IsJoystickScrolling =>
 			joystickScrollStart.HasValue && joystickScrollEnd.HasValue &&
 			(joystickScrollStart.Value - joystickScrollEnd.Value).Length > Game.Settings.Game.MouseScrollDeadzone;
+
+		public override bool GamepadBlocksInput => true;
+		public override bool GamepadFreeCursor => true;
 
 		public override bool HandleMouseInput(MouseInput mi)
 		{

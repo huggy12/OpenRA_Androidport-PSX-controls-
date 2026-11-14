@@ -1,6 +1,8 @@
 #version {VERSION}
 #ifdef GL_ES
-precision mediump float;
+// Mobile GPUs honour mediump (16 bit floats), which is too imprecise to address
+// every texel of large sprite sheets, so request full precision.
+precision highp float;
 #endif
 
 uniform float From;
