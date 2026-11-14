@@ -6,7 +6,7 @@ with a Bluetooth controller using console-style controls inspired by the PlaySta
 
 > **Made with Claude Code.** This port (the Android app, the engine changes, the native library builds and the
 > controller controls) was written by [Claude Code](https://claude.com/claude-code), Anthropic's AI coding agent,
-> directed and tested on a real phone by the repository owner.
+> directed and tested on a vivo x300 ultra with a GameSir G8+ controller
 
 ![Gameplay preview: a skirmish on a phone, controlled with a Bluetooth controller](docs/preview.gif)
 
