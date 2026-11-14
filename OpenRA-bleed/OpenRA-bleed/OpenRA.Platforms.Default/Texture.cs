@@ -225,7 +225,8 @@ namespace OpenRA.Platforms.Default
 
 			PrepareTexture();
 
-			var glInternalFormat = InternalFormat;
+			// GLES only accepts the core formats (not BGRA) for glCopyTexImage2D; Mali GPUs reject BGRA with an error
+			var glInternalFormat = OpenGL.Profile == GLProfile.Embedded ? OpenGL.GL_RGBA : OpenGL.GL_RGBA8;
 			OpenGL.glCopyTexImage2D(OpenGL.GL_TEXTURE_2D, 0, glInternalFormat, rect.X, rect.Y, rect.Width, rect.Height, 0);
 			OpenGL.CheckGLError();
 		}
@@ -301,6 +302,18 @@ namespace OpenRA.Platforms.Default
 				throw new InvalidDataException($"Non-power-of-two array {width}x{height}");
 
 			Size = new Size(width, height);
+
+			// Render targets use RGBA on GLES so that they can be copied with glCopyTexImage2D:
+			// GLES drivers reject BGRA as the copy format (Mali) or BGRA to RGBA copies (Adreno)
+			if (OpenGL.Profile == GLProfile.Embedded)
+			{
+				PrepareTexture();
+				OpenGL.glTexImage2D(OpenGL.GL_TEXTURE_2D, 0, OpenGL.GL_RGBA, width, height,
+					0, OpenGL.GL_RGBA, OpenGL.GL_UNSIGNED_BYTE, IntPtr.Zero);
+				OpenGL.CheckGLError();
+				return;
+			}
+
 			SetData(IntPtr.Zero, width, height);
 		}
 

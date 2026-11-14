@@ -778,9 +778,24 @@ namespace OpenRA.Platforms.Default
 			throw new InvalidOperationException(exceptionMessage);
 		}
 
+		// Non-fatal driver messages that have already been logged, to avoid flooding the logs
+		static readonly HashSet<string> LoggedDebugMessages = [];
+
 		static void DebugMessageHandler(int source, int type, uint id, int severity, int length, StringBuilder message, IntPtr userparam)
 		{
 			string error;
+
+			// Some mobile drivers (e.g. Mali on Pixel phones) report performance hints such as
+			// "Texture is allocated as non-AFBC" with high severity, and others every frame.
+			// Only actual errors are fatal; other messages are logged once.
+			if ((severity == GL_DEBUG_SEVERITY_HIGH || severity == GL_DEBUG_SEVERITY_MEDIUM)
+				&& type != GL_DEBUG_TYPE_ERROR && type != GL_DEBUG_TYPE_UNDEFINED_BEHAVIOR)
+			{
+				if (LoggedDebugMessages.Add(message.ToString()))
+					Console.WriteLine(BuildErrorText(source, type, severity, message));
+
+				return;
+			}
 
 			switch (severity)
 			{
