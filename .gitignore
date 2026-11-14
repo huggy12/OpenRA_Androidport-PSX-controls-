@@ -11,6 +11,8 @@
 /OpenRA.Android/bin/
 /OpenRA.Android/obj/
 *.apk
+# ...except the published build in apk/
+!/apk/*.apk
 
 # Local test output
 /build.log
