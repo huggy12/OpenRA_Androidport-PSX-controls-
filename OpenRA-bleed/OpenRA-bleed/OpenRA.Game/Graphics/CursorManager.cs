@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using System.Linq;
 using OpenRA.Primitives;
 using OpenRA.Traits;
+using OpenRA.Widgets;
 
 namespace OpenRA.Graphics
 {
@@ -202,8 +203,8 @@ namespace OpenRA.Graphics
 
 		public void Render(Renderer renderer)
 		{
-			// Cursor is hidden
-			if (cursor == null)
+			// Cursor is hidden (also while using touch controls, where it would sit at the last tap)
+			if (cursor == null || GamepadNavigation.TouchActive)
 				return;
 
 			// Hardware cursor is enabled

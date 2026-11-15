@@ -25,18 +25,20 @@ namespace OpenRA.Platforms.Default
 	/// with the remaining buttons mapped to the most important hotkeys.
 	/// </summary>
 	/// <remarks>
+	/// The face buttons, shoulders, triggers, stick presses and Start / Back can be reassigned in Settings > Controller
+	/// (<see cref="GamepadSettings"/>). The default layout is:
 	/// Left stick / D-pad: in menus the cursor is locked to the buttons and these step between them.
 	/// In game they move the cursor over the map (push against a screen edge, the sidebar or the command
-	/// bar to scroll). The cursor can't enter the sidebar / command bar on its own.
+	/// bar to scroll). The cursor can't enter the sidebar / command bar / support powers on its own.
 	/// Right stick: scroll the map (or lists in menus).
 	/// A / Cross: select / give orders (left click). Hold and move to drag a selection box, tap twice to select all units of the same type.
-	/// B / Circle: menus: back. Map: cancel the current mode (placing a building, selling...) or jump to the command bar.
-	/// Command bar: back to the map. Sidebar: right click (hold / cancel production).
+	/// B / Circle: menus: back. Map: cancel the current mode (placing a building, selling...), otherwise deselect units.
+	/// Command bar / support powers: back to the map. Sidebar: right click (hold / cancel production).
 	/// X / Square: cycle repair / sell / power down modes.
-	/// Y / Triangle: jump the cursor into the sidebar and back to the map.
+	/// Y / Triangle: jump the cursor into the sidebar and back to the map. Press twice quickly for the support powers.
 	/// L1: next build tab. R1 (hold): fast cursor and map scrolling.
-	/// L2: select all units on screen. R2: attack-move (then A on the target).
-	/// L3: deploy. R3: deselect (right click).
+	/// L2: jump into the command bar and back to the map. R2: attack-move (then A on the target).
+	/// L3: deploy. R3: select all units on screen.
 	/// Start: game menu. Back / Select: jump to base.
 	/// </remarks>
 	sealed class Sdl2GamepadInput
@@ -72,20 +74,44 @@ namespace OpenRA.Platforms.Default
 		const float LockCheckInterval = 0.1f;
 		const float MenuScrollInterval = 0.12f;
 
+		// Two presses of Y / Triangle within this time open the support powers
+		const double DoublePressTime = 0.4;
+
 		// Location of the first production icon in the Red Alert sidebar, relative to the top-right corner
 		const int SidebarWidth = 250;
 		static readonly int2 SidebarIconOffset = new(-SidebarWidth + 42 + 31, 300 + 23);
 
 		readonly Dictionary<int, IntPtr> controllers = [];
 		readonly Stopwatch clock = Stopwatch.StartNew();
-		readonly Dictionary<SDL.SDL_GameControllerButton, Keycode> buttonKeys = new()
+		// Physical controller buttons that can be assigned to actions (the triggers are read as axes)
+		static readonly Dictionary<SDL.SDL_GameControllerButton, GamepadButton> PhysicalButtons = new()
 		{
-			{ SDL.SDL_GameControllerButton.SDL_CONTROLLER_BUTTON_X, Keycode.F13 },
-			{ SDL.SDL_GameControllerButton.SDL_CONTROLLER_BUTTON_LEFTSHOULDER, Keycode.PAGEDOWN },
-			{ SDL.SDL_GameControllerButton.SDL_CONTROLLER_BUTTON_START, Keycode.ESCAPE },
-			{ SDL.SDL_GameControllerButton.SDL_CONTROLLER_BUTTON_BACK, Keycode.H },
-			{ SDL.SDL_GameControllerButton.SDL_CONTROLLER_BUTTON_LEFTSTICK, Keycode.F },
+			{ SDL.SDL_GameControllerButton.SDL_CONTROLLER_BUTTON_A, GamepadButton.A },
+			{ SDL.SDL_GameControllerButton.SDL_CONTROLLER_BUTTON_B, GamepadButton.B },
+			{ SDL.SDL_GameControllerButton.SDL_CONTROLLER_BUTTON_X, GamepadButton.X },
+			{ SDL.SDL_GameControllerButton.SDL_CONTROLLER_BUTTON_Y, GamepadButton.Y },
+			{ SDL.SDL_GameControllerButton.SDL_CONTROLLER_BUTTON_LEFTSHOULDER, GamepadButton.LeftShoulder },
+			{ SDL.SDL_GameControllerButton.SDL_CONTROLLER_BUTTON_RIGHTSHOULDER, GamepadButton.RightShoulder },
+			{ SDL.SDL_GameControllerButton.SDL_CONTROLLER_BUTTON_LEFTSTICK, GamepadButton.LeftStick },
+			{ SDL.SDL_GameControllerButton.SDL_CONTROLLER_BUTTON_RIGHTSTICK, GamepadButton.RightStick },
+			{ SDL.SDL_GameControllerButton.SDL_CONTROLLER_BUTTON_START, GamepadButton.Start },
+			{ SDL.SDL_GameControllerButton.SDL_CONTROLLER_BUTTON_BACK, GamepadButton.Back },
 		};
+
+		// Actions that press a hotkey while their button is held
+		static readonly Dictionary<string, Keycode> ActionKeys = new()
+		{
+			{ nameof(GamepadSettings.CycleModes), Keycode.F13 },
+			{ nameof(GamepadSettings.NextBuildTab), Keycode.PAGEDOWN },
+			{ nameof(GamepadSettings.GameMenu), Keycode.ESCAPE },
+			{ nameof(GamepadSettings.JumpToBase), Keycode.H },
+			{ nameof(GamepadSettings.Deploy), Keycode.F },
+			{ nameof(GamepadSettings.SelectAll), Keycode.Q },
+			{ nameof(GamepadSettings.AttackMove), Keycode.A },
+		};
+
+		// The action started by each button that is currently held, so that releasing it ends the same action
+		readonly Dictionary<GamepadButton, string> activeActions = [];
 
 		readonly Keycode[] scrollKeys = [Keycode.UP, Keycode.DOWN, Keycode.LEFT, Keycode.RIGHT];
 		readonly bool[] scrollKeysHeld = new bool[4];
@@ -101,8 +127,9 @@ namespace OpenRA.Platforms.Default
 		bool cursorInitialized;
 		int2 lastSentPosition;
 		MouseButton heldButtons;
-		bool selectAllHeld;
-		bool attackMoveHeld;
+		bool leftTriggerHeld;
+		bool rightTriggerHeld;
+		double lastTrianglePress = double.NegativeInfinity;
 		int2? mapCursorBeforeHud;
 
 		enum CircleAction { None, Back, RightClick }
@@ -157,40 +184,10 @@ namespace OpenRA.Platforms.Default
 				case SDL.SDL_EventType.SDL_CONTROLLERBUTTONUP:
 				{
 					EnsureCursor(device);
+					GamepadNavigation.TouchActive = false;
 					var down = e.type == SDL.SDL_EventType.SDL_CONTROLLERBUTTONDOWN;
-					var button = (SDL.SDL_GameControllerButton)e.cbutton.button;
-
-					switch (button)
-					{
-						case SDL.SDL_GameControllerButton.SDL_CONTROLLER_BUTTON_A:
-							SendMouseButton(MouseButton.Left, (byte)SDL.SDL_BUTTON_LEFT, down, inputHandler, mods);
-							break;
-
-						case SDL.SDL_GameControllerButton.SDL_CONTROLLER_BUTTON_B:
-							HandleCircle(down, device, inputHandler, mods);
-							break;
-
-						case SDL.SDL_GameControllerButton.SDL_CONTROLLER_BUTTON_Y:
-							if (down && !IsMenuMode())
-								ToggleSidebar(device, inputHandler, mods);
-							break;
-
-						case SDL.SDL_GameControllerButton.SDL_CONTROLLER_BUTTON_RIGHTSTICK:
-							// Deselect (right click on the map)
-							SendMouseButton(MouseButton.Right, (byte)SDL.SDL_BUTTON_RIGHT, down, inputHandler, mods);
-							break;
-
-						case SDL.SDL_GameControllerButton.SDL_CONTROLLER_BUTTON_RIGHTSHOULDER:
-							// Speeds up both the cursor and map scrolling while held
-							boostHeld = down;
-							GamepadNavigation.ScrollSpeedMultiplier = down ? ScrollBoost : 1f;
-							break;
-
-						default:
-							if (buttonKeys.TryGetValue(button, out var key))
-								SendKey(key, down, inputHandler, mods);
-							break;
-					}
+					if (PhysicalButtons.TryGetValue((SDL.SDL_GameControllerButton)e.cbutton.button, out var button))
+						HandleButton(button, down, device, inputHandler, mods);
 
 					return true;
 				}
@@ -245,6 +242,21 @@ namespace OpenRA.Platforms.Default
 					dpadY = -1;
 				if (IsPressed(controller, SDL.SDL_GameControllerButton.SDL_CONTROLLER_BUTTON_DPAD_DOWN))
 					dpadY = 1;
+			}
+
+			// The triggers are analog axes: treat them as buttons that can be assigned to actions like the others
+			var leftTriggerPressed = leftTrigger > TriggerThreshold;
+			if (leftTriggerPressed != leftTriggerHeld)
+			{
+				leftTriggerHeld = leftTriggerPressed;
+				HandleButton(GamepadButton.LeftTrigger, leftTriggerPressed, device, inputHandler, mods);
+			}
+
+			var rightTriggerPressed = rightTrigger > TriggerThreshold;
+			if (rightTriggerPressed != rightTriggerHeld)
+			{
+				rightTriggerHeld = rightTriggerPressed;
+				HandleButton(GamepadButton.RightTrigger, rightTriggerPressed, device, inputHandler, mods);
 			}
 
 			var screen = device.EffectiveWindowSize;
@@ -330,21 +342,104 @@ namespace OpenRA.Platforms.Default
 			SetScrollKey(1, rightStick.Y > ScrollThreshold || edgeDown, inputHandler, mods);
 			SetScrollKey(2, rightStick.X < -ScrollThreshold || edgeLeft, inputHandler, mods);
 			SetScrollKey(3, rightStick.X > ScrollThreshold || edgeRight, inputHandler, mods);
+		}
 
-			// Left trigger selects all units on screen
-			var selectAll = leftTrigger > TriggerThreshold;
-			if (selectAll != selectAllHeld)
+		/// <summary>Starts or ends the action assigned to a controller button (see <see cref="GamepadSettings"/>).</summary>
+		void HandleButton(GamepadButton button, bool down, Sdl2PlatformWindow device, IInputHandler inputHandler, Modifiers mods)
+		{
+			if (!down)
 			{
-				selectAllHeld = selectAll;
-				SendKey(Keycode.Q, selectAll, inputHandler, mods);
+				if (activeActions.Remove(button, out var heldAction))
+					EndAction(heldAction, device, inputHandler, mods);
+
+				return;
 			}
 
-			// Right trigger starts an attack-move (then A / Cross on the target)
-			var attackMove = rightTrigger > TriggerThreshold;
-			if (attackMove != attackMoveHeld)
+			// Ignore repeats (e.g. the same button on two controllers)
+			if (activeActions.ContainsKey(button))
+				return;
+
+			var action = Game.Settings?.Gamepad?.ActionFor(button);
+			if (action != null && StartAction(action, device, inputHandler, mods))
+				activeActions[button] = action;
+		}
+
+		/// <summary>Returns false if the action does nothing here (e.g. map actions in menus).</summary>
+		bool StartAction(string action, Sdl2PlatformWindow device, IInputHandler inputHandler, Modifiers mods)
+		{
+			switch (action)
 			{
-				attackMoveHeld = attackMove;
-				SendKey(Keycode.A, attackMove, inputHandler, mods);
+				case nameof(GamepadSettings.Select):
+					SendMouseButton(MouseButton.Left, (byte)SDL.SDL_BUTTON_LEFT, true, inputHandler, mods);
+					return true;
+
+				case nameof(GamepadSettings.Cancel):
+					HandleCircle(true, device, inputHandler, mods);
+					return true;
+
+				case nameof(GamepadSettings.Sidebar):
+					if (IsMenuMode())
+						return false;
+
+					HandleTriangle(device, inputHandler, mods);
+					return true;
+
+				case nameof(GamepadSettings.CommandBar):
+					if (IsMenuMode())
+						return false;
+
+					ToggleCommandBar(device, inputHandler, mods);
+					return true;
+
+				case nameof(GamepadSettings.FastCursor):
+					// Speeds up both the cursor and map scrolling while held
+					boostHeld = true;
+					GamepadNavigation.ScrollSpeedMultiplier = ScrollBoost;
+					return true;
+
+				case nameof(GamepadSettings.AttackMove):
+				case nameof(GamepadSettings.SelectAll):
+					// Map-only hotkeys: these letters must not reach menus (e.g. text fields)
+					if (IsMenuMode())
+						return false;
+
+					SendKey(ActionKeys[action], true, inputHandler, mods);
+					return true;
+
+				default:
+					if (!ActionKeys.TryGetValue(action, out var key))
+						return false;
+
+					SendKey(key, true, inputHandler, mods);
+					return true;
+			}
+		}
+
+		void EndAction(string action, Sdl2PlatformWindow device, IInputHandler inputHandler, Modifiers mods)
+		{
+			switch (action)
+			{
+				case nameof(GamepadSettings.Select):
+					SendMouseButton(MouseButton.Left, (byte)SDL.SDL_BUTTON_LEFT, false, inputHandler, mods);
+
+					// Picking a support power that needs a target: go back to the map to aim it
+					if (ZoneAt(CursorPosition) == GamepadNavigation.SupportPowersZone && IsOrderModeActive())
+						ReturnToMap(device, inputHandler, mods);
+					break;
+
+				case nameof(GamepadSettings.Cancel):
+					HandleCircle(false, device, inputHandler, mods);
+					break;
+
+				case nameof(GamepadSettings.FastCursor):
+					boostHeld = false;
+					GamepadNavigation.ScrollSpeedMultiplier = 1f;
+					break;
+
+				default:
+					if (ActionKeys.TryGetValue(action, out var key))
+						SendKey(key, false, inputHandler, mods);
+					break;
 			}
 		}
 
@@ -441,6 +536,7 @@ namespace OpenRA.Platforms.Default
 		{
 			try
 			{
+				// Steps between all HUD buttons, so the cursor can move from the support powers to the sidebar or command bar
 				var target = GamepadNavigation.FindTarget(CursorPosition, direction, false);
 				if (target != null)
 					MoveCursorTo(target.Value, inputHandler, mods);
@@ -540,6 +636,7 @@ namespace OpenRA.Platforms.Default
 
 			var delta = position - lastSentPosition;
 			lastSentPosition = position;
+			GamepadNavigation.TouchActive = false;
 			inputHandler.OnMouseInput(new MouseInput(MouseInputEvent.Move, heldButtons, position, delta, mods, 0));
 		}
 
@@ -587,8 +684,8 @@ namespace OpenRA.Platforms.Default
 		}
 
 		/// <summary>
-		/// B / Circle depends on context: back in menus, cancel the current mode or open the command bar on the map,
-		/// return to the map from the command bar, and right click (hold / cancel production) in the sidebar.
+		/// B / Circle depends on context: back in menus, cancel the current mode or deselect units on the map,
+		/// return to the map from the command bar or support powers, and right click (hold / cancel production) in the sidebar.
 		/// </summary>
 		void HandleCircle(bool down, Sdl2PlatformWindow device, IInputHandler inputHandler, Modifiers mods)
 		{
@@ -612,34 +709,70 @@ namespace OpenRA.Platforms.Default
 
 			circleAction = CircleAction.None;
 			var zone = ZoneAt(CursorPosition);
-			if (zone == "commandbar")
+			if (zone == "commandbar" || zone == GamepadNavigation.SupportPowersZone)
 				ReturnToMap(device, inputHandler, mods);
-			else if (zone != null || IsOverInterface() || IsOrderModeActive())
+			else
 			{
-				// Sidebar: hold / cancel production. Map: cancel building placement, sell mode, etc.
+				// Sidebar: hold / cancel production.
+				// Map: cancel building placement, sell mode, etc., otherwise deselect (a right click with the Classic mouse style).
 				circleAction = CircleAction.RightClick;
 				SendMouseButton(MouseButton.Right, (byte)SDL.SDL_BUTTON_RIGHT, true, inputHandler, mods);
 			}
+		}
+
+		/// <summary>
+		/// Y / Triangle: jump into the sidebar, or back to the map.
+		/// A second press shortly after the first opens the support powers (if the player has any).
+		/// </summary>
+		void HandleTriangle(Sdl2PlatformWindow device, IInputHandler inputHandler, Modifiers mods)
+		{
+			var now = clock.Elapsed.TotalSeconds;
+			if (now - lastTrianglePress <= DoublePressTime && HasSupportPowers())
+			{
+				lastTrianglePress = double.NegativeInfinity;
+				JumpToZone(GamepadNavigation.SupportPowersZone, inputHandler, mods);
+				return;
+			}
+
+			lastTrianglePress = now;
+			var zone = ZoneAt(CursorPosition);
+			if (zone == "sidebar" || zone == GamepadNavigation.SupportPowersZone)
+				ReturnToMap(device, inputHandler, mods);
+			else
+				JumpToZone("sidebar", inputHandler, mods);
+		}
+
+		/// <summary>L2 / LT: jump into the command bar, or back to the map.</summary>
+		void ToggleCommandBar(Sdl2PlatformWindow device, IInputHandler inputHandler, Modifiers mods)
+		{
+			if (ZoneAt(CursorPosition) == "commandbar")
+				ReturnToMap(device, inputHandler, mods);
 			else
 				JumpToZone("commandbar", inputHandler, mods);
 		}
 
-		/// <summary>Y / Triangle: jump into the sidebar, or back to the map.</summary>
-		void ToggleSidebar(Sdl2PlatformWindow device, IInputHandler inputHandler, Modifiers mods)
+		static bool HasSupportPowers()
 		{
-			if (ZoneAt(CursorPosition) == "sidebar")
-				ReturnToMap(device, inputHandler, mods);
-			else
-				JumpToZone("sidebar", inputHandler, mods);
+			try
+			{
+				return GamepadNavigation.NearestTargetInZone(GamepadNavigation.SupportPowersZone, int2.Zero) != null;
+			}
+			catch (Exception e)
+			{
+				Log.Write("debug", $"Gamepad navigation failed: {e}");
+				return false;
+			}
 		}
 
 		void JumpToZone(string zone, IInputHandler inputHandler, Modifiers mods)
 		{
 			try
 			{
-				// Aim for the first build icon in the sidebar, or the nearest command bar button
+				// Aim for the first build icon in the sidebar, the first support power, or the nearest command bar button
 				var screen = Game.Renderer.Resolution;
-				var aim = zone == "sidebar" ? new int2(screen.Width, 0) + SidebarIconOffset : new int2(0, screen.Height);
+				var aim = zone == "sidebar" ? new int2(screen.Width, 0) + SidebarIconOffset
+					: zone == GamepadNavigation.SupportPowersZone ? int2.Zero
+					: new int2(0, screen.Height);
 				var target = GamepadNavigation.NearestTargetInZone(zone, aim);
 				if (target == null)
 					return;
@@ -702,17 +835,14 @@ namespace OpenRA.Platforms.Default
 
 			boostHeld = false;
 			GamepadNavigation.ScrollSpeedMultiplier = 1f;
-			if (selectAllHeld)
-			{
-				selectAllHeld = false;
-				SendKey(Keycode.Q, false, inputHandler, mods);
-			}
 
-			if (attackMoveHeld)
-			{
-				attackMoveHeld = false;
-				SendKey(Keycode.A, false, inputHandler, mods);
-			}
+			// Release any hotkeys held by controller buttons
+			foreach (var action in activeActions.Values)
+				if (ActionKeys.TryGetValue(action, out var key))
+					SendKey(key, false, inputHandler, mods);
+
+			activeActions.Clear();
+			leftTriggerHeld = rightTriggerHeld = false;
 
 			if (circleAction == CircleAction.Back)
 				SendKey(Keycode.ESCAPE, false, inputHandler, mods);

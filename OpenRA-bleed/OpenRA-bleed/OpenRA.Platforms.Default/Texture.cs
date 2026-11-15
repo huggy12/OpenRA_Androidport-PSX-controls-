@@ -155,6 +155,10 @@ namespace OpenRA.Platforms.Default
 
 		void SetSubData(IntPtr data, int xoffset, int yoffset, int width, int height)
 		{
+			// Empty regions (e.g. from zero-sized sprites) have nothing to upload, and the packed copy below can't hold them
+			if (width <= 0 || height <= 0)
+				return;
+
 			PrepareTexture();
 
 			// Some mobile GPU drivers (e.g. Adreno) corrupt sub-region uploads that use the UNPACK_ROW_LENGTH /

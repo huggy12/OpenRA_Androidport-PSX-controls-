@@ -145,6 +145,7 @@ ChromeLayout:
 	common|chrome/settings-gameplay.yaml
 	common|chrome/settings-audio.yaml
 	common|chrome/settings-input.yaml
+	common|chrome/settings-controller.yaml
 	ts|chrome/settings-hotkeys.yaml
 	common|chrome/settings-advanced.yaml
 	common|chrome/credits.yaml

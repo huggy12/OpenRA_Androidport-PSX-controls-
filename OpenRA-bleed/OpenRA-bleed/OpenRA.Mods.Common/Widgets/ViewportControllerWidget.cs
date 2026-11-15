@@ -196,7 +196,8 @@ namespace OpenRA.Mods.Common.Widgets
 			else if (!isStandardScrolling)
 			{
 				edgeDirections = ScrollDirection.None;
-				if (Game.Settings.Game.ViewportEdgeScroll && Game.Renderer.WindowHasInputFocus)
+				// Touch controls leave the cursor where the last tap was, which mustn't scroll the map
+				if (Game.Settings.Game.ViewportEdgeScroll && Game.Renderer.WindowHasInputFocus && !GamepadNavigation.TouchActive)
 					edgeDirections = CheckForDirections();
 
 				if (Ui.KeyboardFocusWidget != null)

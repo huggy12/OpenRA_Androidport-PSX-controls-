@@ -66,6 +66,9 @@ namespace OpenRA.Mods.Common.Widgets
 
 		Rectangle eventBounds;
 		public override Rectangle EventBounds => eventBounds;
+
+		// The icons are laid out from the widget's origin, outside its (zero sized) render bounds
+		public override Rectangle GamepadZoneBounds => eventBounds;
 		SpriteFont overlayFont;
 		Vector2 iconOffset, holdOffset, readyOffset, timeOffset;
 

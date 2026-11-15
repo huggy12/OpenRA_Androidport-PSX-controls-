@@ -21,7 +21,8 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 	public class IntroductionPromptLogic : ChromeLogic
 	{
 		// Increment the version number when adding new stats
-		const int IntroductionVersion = 2;
+		// Version 3 added the touch controls option (shown again so existing Android players see it)
+		const int IntroductionVersion = 3;
 
 		[FluentReference]
 		const string Classic = "options-control-scheme.classic";
@@ -134,6 +135,8 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			}
 
 			SettingsUtils.BindCheckboxPref(widget, "EDGESCROLL_CHECKBOX", gameSettings, "ViewportEdgeScroll");
+			if (widget.GetOrNull<CheckboxWidget>("TOUCH_CONTROLS_CHECKBOX") != null)
+				SettingsUtils.BindCheckboxPref(widget, "TOUCH_CONTROLS_CHECKBOX", gameSettings, "TouchControls");
 
 			var colorManager = modData.DefaultRules.Actors[SystemActors.World].TraitInfo<IColorPickerManagerInfo>();
 

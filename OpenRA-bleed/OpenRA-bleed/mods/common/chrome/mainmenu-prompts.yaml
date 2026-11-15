@@ -324,6 +324,19 @@ Background@MAINMENU_INTRODUCTION_PROMPT:
 									Height: 20
 									Font: Regular
 									Text: checkbox-edgescroll-container
+				Container@ROW:
+					Width: PARENT_WIDTH
+					Height: 20
+					Children:
+						Container@TOUCH_CONTROLS_CHECKBOX_CONTAINER:
+							X: 10
+							Width: PARENT_WIDTH / 2 - 20
+							Children:
+								Checkbox@TOUCH_CONTROLS_CHECKBOX:
+									Width: PARENT_WIDTH
+									Height: 20
+									Font: Regular
+									Text: checkbox-touch-controls-container
 				Container@SPACER:
 					Height: 46
 				Background@DISPLAY_SECTION_HEADER:

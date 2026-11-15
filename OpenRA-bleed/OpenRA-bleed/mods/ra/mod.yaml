@@ -1,6 +1,6 @@
 Metadata:
 	Title: mod-title
-	Version: {DEV_VERSION}
+	Version: playtest-20261026
 	Website: https://www.openra.net
 	WebIcon32: https://www.openra.net/images/icons/ra_32x32.png
 	WindowTitle: mod-windowtitle
@@ -136,6 +136,7 @@ ChromeLayout:
 	common|chrome/settings-display.yaml
 	common|chrome/settings-audio.yaml
 	common|chrome/settings-input.yaml
+	common|chrome/settings-controller.yaml
 	common|chrome/settings-hotkeys.yaml
 	common|chrome/settings-gameplay.yaml
 	common|chrome/settings-advanced.yaml

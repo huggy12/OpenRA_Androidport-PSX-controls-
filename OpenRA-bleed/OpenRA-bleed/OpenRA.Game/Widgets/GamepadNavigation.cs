@@ -35,6 +35,12 @@ namespace OpenRA.Widgets
 		/// <summary>True while a gamepad is connected (set by the platform layer).</summary>
 		public static bool Connected;
 
+		/// <summary>True when the last pointer input came from touch controls (hides the software cursor and edge scrolling).</summary>
+		public static bool TouchActive;
+
+		/// <summary>The gamepad zone that holds the support power (special abilities) icons.</summary>
+		public const string SupportPowersZone = "supportpowers";
+
 		/// <summary>Multiplier applied to keyboard/edge map scrolling (the gamepad's scroll boost button).</summary>
 		public static float ScrollSpeedMultiplier = 1f;
 
@@ -84,9 +90,9 @@ namespace OpenRA.Widgets
 			if (!widget.IsVisible())
 				return;
 
-			if (widget.GamepadZone != null)
+			var bounds = widget.GamepadZone != null ? widget.GamepadZoneBounds : Rectangle.Empty;
+			if (bounds.Width > 0 && bounds.Height > 0)
 			{
-				var bounds = widget.RenderBounds;
 				Zones[widget.GamepadZone] = Zones.TryGetValue(widget.GamepadZone, out var existing) ? Rectangle.Union(existing, bounds) : bounds;
 			}
 
@@ -159,6 +165,26 @@ namespace OpenRA.Widgets
 			public int2 Center => new(Bounds.X + Bounds.Width / 2, Bounds.Y + Bounds.Height / 2);
 		}
 
+		/// <summary>True if the position is over the in-game world view (not a menu, HUD panel or the radar).</summary>
+		public static bool IsWorldViewAt(int2 position)
+		{
+			var world = Game.OrderManager?.World;
+			return world != null && world.Type == WorldType.Regular && ZoneAt(position) == null && IsFreeCursorArea(position);
+		}
+
+		/// <summary>Touch controls: moves the camera if the position is on a minimap. Returns false for anything else.</summary>
+		public static bool TouchMoveViewAt(int2 position)
+		{
+			var hit = HitTest(Ui.Root, position);
+			return hit != null && hit.TouchMoveView(position);
+		}
+
+		/// <summary>Scrolls the in-game world view by the given number of (effective) screen pixels.</summary>
+		public static void ScrollWorldView(Vector2 delta)
+		{
+			Game.CurrentWorldRenderer?.Viewport.Scroll(delta, false);
+		}
+
 		/// <summary>True if the cursor is over an area (e.g. the world view or radar) that uses free cursor movement.</summary>
 		public static bool IsFreeCursorArea(int2 position)
 		{
@@ -201,7 +227,7 @@ namespace OpenRA.Widgets
 		/// Finds the position to move the cursor to when pressing the given direction.
 		/// Returns null if the cursor should instead move freely (no target, or leaving the UI into the world view).
 		/// </summary>
-		public static int2? FindTarget(int2 from, Vector2 direction, bool allowExitToWorld = true)
+		public static int2? FindTarget(int2 from, Vector2 direction, bool allowExitToWorld = true, string withinZone = null)
 		{
 			if (direction == Vector2.Zero)
 				return null;
@@ -209,6 +235,11 @@ namespace OpenRA.Widgets
 			direction = Vector2.Normalize(direction);
 
 			var targets = CollectTargets();
+
+			// Optionally keep navigation inside one HUD zone (e.g. the support powers bar)
+			if (withinZone != null && GetZones().TryGetValue(withinZone, out var zoneBounds))
+				targets.RemoveAll(t => !zoneBounds.Contains(t.Center));
+
 			Target? current = null;
 			foreach (var t in targets)
 				if (t.Bounds.Contains(from))

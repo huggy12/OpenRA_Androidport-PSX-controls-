@@ -325,6 +325,18 @@ namespace OpenRA.Mods.Common.Widgets
 
 		public override bool GamepadBlocksInput => true;
 
+		public override bool TouchMoveView(int2 position)
+		{
+			if (!mapRect.Contains(position))
+				return false;
+
+			// Without a radar the minimap is blank: swallow the touch rather than giving an order
+			if (hasRadar)
+				worldRenderer.Viewport.Center(MinimapPixelToWorldCoords(position));
+
+			return true;
+		}
+
 		public override bool HandleMouseInput(MouseInput mi)
 		{
 			if (!mapRect.Contains(mi.Location))

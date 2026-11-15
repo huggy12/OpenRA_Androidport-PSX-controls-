@@ -289,6 +289,19 @@ Container@INPUT_PANEL:
 									Height: 20
 									Font: Regular
 									Text: checkbox-lockmouse-container
+				Container@ROW:
+					Width: PARENT_WIDTH - 24
+					Height: 20
+					Children:
+						Container@TOUCH_CONTROLS_CHECKBOX_CONTAINER:
+							X: PARENT_WIDTH / 2 + 10
+							Width: PARENT_WIDTH / 2 - 20
+							Children:
+								Checkbox@TOUCH_CONTROLS_CHECKBOX:
+									Width: PARENT_WIDTH
+									Height: 20
+									Font: Regular
+									Text: checkbox-touch-controls-container
 				Container@SPACER:
 					Height: 46
 				Container@ROW:

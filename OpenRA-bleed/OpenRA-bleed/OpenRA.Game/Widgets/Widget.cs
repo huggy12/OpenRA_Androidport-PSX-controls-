@@ -239,6 +239,9 @@ namespace OpenRA.Widgets
 		/// </summary>
 		public string GamepadZone = null;
 
+		/// <summary>The area this widget adds to its gamepad zone (widgets that lay out their own icons can override this).</summary>
+		public virtual Rectangle GamepadZoneBounds => RenderBounds;
+
 		/// <summary>Opacity used on Android while the cursor is outside this widget's gamepad zone (or bounds).</summary>
 		public float InactiveAlpha = 1f;
 		public bool IgnoreChildMouseOver;
@@ -469,6 +472,12 @@ namespace OpenRA.Widgets
 		/// <summary>True for areas (such as the world view) where the gamepad d-pad moves the cursor freely instead of snapping.</summary>
 		public virtual bool GamepadFreeCursor => false;
 
+		/// <summary>
+		/// Touch controls: moves the camera to the touched position (e.g. on a minimap) instead of clicking.
+		/// Returns false if touches here should be treated as normal clicks.
+		/// </summary>
+		public virtual bool TouchMoveView(int2 position) { return false; }
+
 		public bool HandleMouseInputOuter(MouseInput mi)
 		{
 			// Are we able to handle this event?
@@ -548,8 +557,9 @@ namespace OpenRA.Widgets
 		{
 			if (IsVisible())
 			{
-				// Fade HUD panels that the player isn't currently using (like the PlayStation version of Red Alert)
-				var fade = Platform.IsAndroid && InactiveAlpha < 1f && !GamepadNavigation.IsWidgetActive(this);
+				// Fade HUD panels that the player isn't currently using (like the PlayStation version of Red Alert).
+				// Touch controls have no resting cursor, so keep the panels solid for them.
+				var fade = Platform.IsAndroid && InactiveAlpha < 1f && !GamepadNavigation.TouchActive && !GamepadNavigation.IsWidgetActive(this);
 				var spriteRenderer = Game.Renderer.SpriteRenderer;
 				var previousAlpha = spriteRenderer.AlphaMultiplier;
 				if (fade)

@@ -324,6 +324,9 @@ namespace OpenRA
 		public int ViewportEdgeScrollMargin = 5;
 
 		public bool LockMouseWindow = false;
+
+		/// <summary>Touch screen gestures: tap to select / move, hold to attack-move, drag to scroll, two fingers to box select.</summary>
+		public bool TouchControls = false;
 		public MouseControlStyle MouseControlStyle = MouseControlStyle.Modern;
 		public MouseScrollType MouseScroll = MouseScrollType.Joystick;
 		public float ViewportEdgeScrollStep = 30f;
@@ -379,6 +382,67 @@ namespace OpenRA
 		}
 	}
 
+	/// <summary>The remappable buttons of a game controller (the sticks and d-pad are not remappable).</summary>
+	public enum GamepadButton { A, B, X, Y, LeftShoulder, RightShoulder, LeftTrigger, RightTrigger, LeftStick, RightStick, Start, Back }
+
+	/// <summary>Which controller button performs each gamepad action. Every action has its own button.</summary>
+	[YamlNode("Gamepad", shared: true)]
+	public class GamepadSettings : SettingsModule
+	{
+		/// <summary>The remappable actions, in the order they are shown in the settings menu.</summary>
+		public static readonly string[] Actions =
+		[
+			nameof(Select), nameof(Cancel), nameof(Sidebar), nameof(CycleModes), nameof(CommandBar), nameof(AttackMove),
+			nameof(NextBuildTab), nameof(FastCursor), nameof(Deploy), nameof(SelectAll), nameof(GameMenu), nameof(JumpToBase)
+		];
+
+		public GamepadButton Select = GamepadButton.A;
+		public GamepadButton Cancel = GamepadButton.B;
+		public GamepadButton CycleModes = GamepadButton.X;
+		public GamepadButton Sidebar = GamepadButton.Y;
+		public GamepadButton NextBuildTab = GamepadButton.LeftShoulder;
+		public GamepadButton FastCursor = GamepadButton.RightShoulder;
+		public GamepadButton CommandBar = GamepadButton.LeftTrigger;
+		public GamepadButton AttackMove = GamepadButton.RightTrigger;
+		public GamepadButton Deploy = GamepadButton.LeftStick;
+		public GamepadButton SelectAll = GamepadButton.RightStick;
+		public GamepadButton GameMenu = GamepadButton.Start;
+		public GamepadButton JumpToBase = GamepadButton.Back;
+
+		public GamepadButton GetButton(string action)
+		{
+			return (GamepadButton)typeof(GamepadSettings).GetField(action).GetValue(this);
+		}
+
+		/// <summary>Assigns a button to an action. If another action used that button, it takes over the action's old button.</summary>
+		public void SetButton(string action, GamepadButton button)
+		{
+			var previous = GetButton(action);
+			foreach (var other in Actions)
+				if (other != action && GetButton(other) == button)
+					typeof(GamepadSettings).GetField(other).SetValue(this, previous);
+
+			typeof(GamepadSettings).GetField(action).SetValue(this, button);
+		}
+
+		/// <summary>Returns the action assigned to a button, or null.</summary>
+		public string ActionFor(GamepadButton button)
+		{
+			foreach (var action in Actions)
+				if (GetButton(action) == button)
+					return action;
+
+			return null;
+		}
+
+		public void ResetToDefaults()
+		{
+			var defaults = new GamepadSettings();
+			foreach (var action in Actions)
+				typeof(GamepadSettings).GetField(action).SetValue(this, defaults.GetButton(action));
+		}
+	}
+
 	public class Settings
 	{
 		readonly string settingsFile;
@@ -389,6 +453,7 @@ namespace OpenRA
 		public readonly GraphicSettings Graphics;
 		public readonly ServerSettings Server;
 		public readonly DebugSettings Debug;
+		public readonly GamepadSettings Gamepad;
 
 		readonly Arguments args;
 		readonly TypeDictionary modules = [];
@@ -413,6 +478,7 @@ namespace OpenRA
 			Graphics = GetOrCreate<GraphicSettings>(null);
 			Server = GetOrCreate<ServerSettings>(null);
 			Debug = GetOrCreate<DebugSettings>(null);
+			Gamepad = GetOrCreate<GamepadSettings>(null);
 		}
 
 		public T GetOrCreate<T>(ObjectCreator objectCreator, string mod = null) where T : SettingsModule

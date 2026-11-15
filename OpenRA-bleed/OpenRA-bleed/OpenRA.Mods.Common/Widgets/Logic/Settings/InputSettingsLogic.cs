@@ -64,6 +64,8 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			SettingsUtils.BindCheckboxPref(panel, "ALTERNATE_SCROLL_CHECKBOX", gameSettings, "UseAlternateScrollButton");
 			SettingsUtils.BindCheckboxPref(panel, "EDGESCROLL_CHECKBOX", gameSettings, "ViewportEdgeScroll");
 			SettingsUtils.BindCheckboxPref(panel, "LOCKMOUSE_CHECKBOX", gameSettings, "LockMouseWindow");
+			if (panel.GetOrNull<CheckboxWidget>("TOUCH_CONTROLS_CHECKBOX") != null)
+				SettingsUtils.BindCheckboxPref(panel, "TOUCH_CONTROLS_CHECKBOX", gameSettings, "TouchControls");
 			SettingsUtils.BindSliderPref(panel, "ZOOMSPEED_SLIDER", gameSettings, "ZoomSpeed");
 			SettingsUtils.BindSliderPref(panel, "SCROLLSPEED_SLIDER", gameSettings, "ViewportEdgeScrollStep");
 			SettingsUtils.BindSliderPref(panel, "UI_SCROLLSPEED_SLIDER", gameSettings, "UIScrollSpeed");
@@ -147,6 +149,7 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 				gameSettings.MouseScroll = defaultGameSettings.MouseScroll;
 				gameSettings.UseAlternateScrollButton = defaultGameSettings.UseAlternateScrollButton;
 				gameSettings.LockMouseWindow = defaultGameSettings.LockMouseWindow;
+				gameSettings.TouchControls = defaultGameSettings.TouchControls;
 				gameSettings.ViewportEdgeScroll = defaultGameSettings.ViewportEdgeScroll;
 				gameSettings.ViewportEdgeScrollStep = defaultGameSettings.ViewportEdgeScrollStep;
 				gameSettings.ZoomSpeed = defaultGameSettings.ZoomSpeed;

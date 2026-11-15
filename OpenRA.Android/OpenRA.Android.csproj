@@ -7,8 +7,8 @@
 		<AssemblyName>OpenRA.Android</AssemblyName>
 		<ApplicationId>net.openra.android.ra</ApplicationId>
 		<ApplicationTitle>OpenRA - Red Alert</ApplicationTitle>
-		<ApplicationVersion>1</ApplicationVersion>
-		<ApplicationDisplayVersion>0.1</ApplicationDisplayVersion>
+		<ApplicationVersion>2</ApplicationVersion>
+		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
 		<RuntimeIdentifiers>android-arm64</RuntimeIdentifiers>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<Nullable>disable</Nullable>

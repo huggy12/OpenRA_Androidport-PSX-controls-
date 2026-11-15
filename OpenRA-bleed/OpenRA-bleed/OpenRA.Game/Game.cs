@@ -45,6 +45,7 @@ namespace OpenRA
 		public static bool HideCursor;
 
 		static WorldRenderer worldRenderer;
+		internal static WorldRenderer CurrentWorldRenderer => worldRenderer;
 		static string modLaunchWrapper;
 
 		internal static OrderManager OrderManager;
