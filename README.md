@@ -135,7 +135,7 @@ the cursor until you use a controller or mouse again. They work together with a 
 The [Combined Arms](https://github.com/Inq8/CAmod) mod for OpenRA, with the same PlayStation-style controller controls
 and touch controls as the Red Alert app. It installs as a separate app called **Combined Arms**, next to Red Alert.
 
-**APK: [`CombinedArms-android.apk`](https://github.com/huggy12/OpenRA_Androidport-PSX-controls-/releases/download/ca-1.0/CombinedArms-android.apk)** (from the [`ca-1.0` release](https://github.com/huggy12/OpenRA_Androidport-PSX-controls-/releases/tag/ca-1.0), about 233 MB)
+**APK: [`CombinedArms-android.apk` on MEGA](https://mega.nz/file/V2YWXaDK#9xtv7DbYKRbQlWVx24TC9ewP94rylVo2bU0TS_U03Uo)** (about 233 MB)
 
 1. Download the APK on your phone and install it like the Red Alert one (allow "install unknown apps").
 2. Start **Combined Arms**. On first launch choose **Quick Install**: it downloads the freeware Red Alert and
@@ -181,7 +181,7 @@ CA.Android/build-apk.sh        # builds CA.Android/bin/Release/net10.0-android/n
 
 With a phone connected over USB debugging, `OpenRA.Android/run-on-phone.sh` builds, installs, launches and reports crashes.
 To publish a new build, copy the signed APK over `apk/OpenRA-RedAlert-android.apk` and commit it.
-The Combined Arms APK is too big for a normal git file (GitHub's limit is 100 MB), so it is published as a GitHub release asset instead.
+The Combined Arms APK is too big for a normal git file (GitHub's limit is 100 MB), so it is hosted on MEGA instead (linked in [Combined Arms for Android](#combined-arms-for-android)).
 
 ## Engine changes
 
