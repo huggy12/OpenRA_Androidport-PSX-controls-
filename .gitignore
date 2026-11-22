@@ -3,6 +3,7 @@
 /orig/
 /diag/
 /*.zip
+/ca-engine-dl/
 
 # Build output (recreate with native/build-native.sh and OpenRA.Android/build-apk.sh)
 /native/build/
@@ -10,12 +11,16 @@
 /native/*.log
 /OpenRA.Android/bin/
 /OpenRA.Android/obj/
+/CA.Android/bin/
+/CA.Android/obj/
 *.apk
 # ...except the published build in apk/
 !/apk/*.apk
 
 # Local test output
 /build.log
+/build-ca.log
+/ca-screen*.png
 /logcat*.txt
 /screen.png
 

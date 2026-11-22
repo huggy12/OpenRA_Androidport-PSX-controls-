@@ -1,0 +1,239 @@
+﻿#region Copyright & License Information
+/**
+ * Copyright (c) The OpenRA Combined Arms Developers (see CREDITS).
+ * This file is part of OpenRA Combined Arms, which is free software.
+ * It is made available to you under the terms of the GNU General Public License
+ * as published by the Free Software Foundation, either version 3 of the License,
+ * or (at your option) any later version. For more information, see COPYING.
+ */
+#endregion
+
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using OpenRA.Mods.Common;
+using OpenRA.Mods.Common.Activities;
+using OpenRA.Mods.Common.Effects;
+using OpenRA.Mods.Common.Traits;
+using OpenRA.Primitives;
+using OpenRA.Traits;
+
+namespace OpenRA.Mods.CA.Traits
+{
+	public class InterceptorPowerInfo : DirectionalSupportPowerInfo
+	{
+		[ActorReference(typeof(AircraftInfo))]
+		public readonly string UnitType = "yf23";
+		public readonly int SquadSize = 3;
+		public readonly WVec SquadOffset = new WVec(-1536, 1536, 0);
+
+		public readonly int QuantizedFacings = 32;
+
+		[Desc("Minimum distance from the target to spawn the planes.")]
+		public readonly WDist MinDistance = WDist.FromCells(32);
+
+		[ActorReference]
+		[Desc("Actor to spawn when the aircraft start attacking")]
+		public readonly string CameraActor = null;
+
+		[Desc("Weapon range offset to apply during the beacon clock calculation")]
+		public readonly WDist BeaconDistanceOffset = WDist.FromCells(6);
+
+		public readonly int GuardDuration = 150;
+
+		public readonly WDist GuardRadius = WDist.FromCells(10);
+
+		public readonly Color TargetCircleColor = Color.White;
+
+		public readonly bool TargetCircleUsePlayerColor = false;
+
+		public override object Create(ActorInitializer init) { return new InterceptorPower(init.Self, this); }
+	}
+
+	public class InterceptorPower : DirectionalSupportPower
+	{
+		readonly InterceptorPowerInfo info;
+
+		public InterceptorPower(Actor self, InterceptorPowerInfo info)
+			: base(self, info)
+		{
+			this.info = info;
+		}
+
+		public override void SelectTarget(Actor self, string order, SupportPowerManager manager)
+		{
+			if (info.UseDirectionalTarget)
+				self.World.OrderGenerator = new SelectDirectionalTargetWithCircle(self.World, order, manager, info,
+					info.GuardRadius, info.TargetCircleColor, info.TargetCircleUsePlayerColor);
+			else
+				base.SelectTarget(self, order, manager);
+		}
+
+		public override void Activate(Actor self, Order order, SupportPowerManager manager)
+		{
+			base.Activate(self, order, manager);
+			PlayLaunchSounds();
+
+			var facing = info.UseDirectionalTarget && order.ExtraData != uint.MaxValue ? (WAngle?)WAngle.FromFacing((int)order.ExtraData) : null;
+			SendAirstrike(self, order.Target.CenterPosition, facing);
+		}
+
+		public Actor[] SendAirstrike(Actor self, WPos targetPos, WAngle? facing = null)
+		{
+			var aircraft = new List<Actor>();
+			if (!facing.HasValue)
+				facing = new WAngle(1024 * self.World.SharedRandom.Next(info.QuantizedFacings) / info.QuantizedFacings);
+
+			var altitude = self.World.Map.Rules.Actors[info.UnitType].TraitInfo<AircraftInfo>().CruiseAltitude.Length;
+			var attackRotation = WRot.FromYaw(facing.Value);
+			var delta = new WVec(0, -1024, 0).Rotate(attackRotation);
+			targetPos += new WVec(0, 0, altitude);
+
+			var distanceFromStartEdgeToTarget = self.World.Map.DistanceToEdge(targetPos, -delta);
+			var extraDistanceToMeetMinimum = info.MinDistance > distanceFromStartEdgeToTarget ? info.MinDistance - distanceFromStartEdgeToTarget : WDist.Zero;
+			var startEdge = targetPos - (distanceFromStartEdgeToTarget + WDist.FromCells(1) + extraDistanceToMeetMinimum).Length * delta / 1024;
+
+			Actor camera = null;
+			Beacon beacon = null;
+			var aircraftInRange = new Dictionary<Actor, bool>();
+
+			Action<Actor> onEnterRange = a =>
+			{
+				// Spawn a camera and remove the beacon when the first plane enters the target area
+				if (info.CameraActor != null && camera == null && !aircraftInRange.Any(kv => kv.Value))
+				{
+					self.World.AddFrameEndTask(w =>
+					{
+						camera = w.CreateActor(info.CameraActor, new TypeDictionary
+						{
+							new LocationInit(self.World.Map.CellContaining(targetPos)),
+							new OwnerInit(self.Owner),
+						});
+					});
+				}
+
+				RemoveBeacon(beacon);
+
+				aircraftInRange[a] = true;
+			};
+
+			Action<Actor> onExitRange = a =>
+			{
+				aircraftInRange[a] = false;
+
+				// Remove the camera when the final plane leaves the target area
+				if (!aircraftInRange.Any(kv => kv.Value))
+					RemoveCamera(camera);
+			};
+
+			Action<Actor> onRemovedFromWorld = a =>
+			{
+				aircraftInRange[a] = false;
+
+				// Checking for attack range is not relevant here because
+				// aircraft may be shot down before entering the range.
+				// If at the map's edge, they may be removed from world before leaving.
+				if (aircraftInRange.All(kv => !kv.Key.IsInWorld))
+				{
+					RemoveCamera(camera);
+					RemoveBeacon(beacon);
+				}
+			};
+
+			// Create the actors immediately so they can be returned
+			for (var i = -info.SquadSize / 2; i <= info.SquadSize / 2; i++)
+			{
+				// Even-sized squads skip the lead plane
+				if (i == 0 && (info.SquadSize & 1) == 0)
+					continue;
+
+				var so = info.SquadOffset;
+
+				// Shift target left by 4 cells to account for counterclockwise circling behavior
+				var loopCompensationOffset = new WVec(WDist.FromCells(4).Length, WDist.FromCells(1).Length, 0);
+
+				// Includes the 90 degree rotation between body and world coordinates
+				var spawnOffset = (new WVec(i * so.Y, -Math.Abs(i) * so.X, 0) + loopCompensationOffset).Rotate(attackRotation);
+				var targetOffset = (new WVec(i * so.Y, 0, 0) + loopCompensationOffset).Rotate(attackRotation);
+
+				var spawnPos = startEdge + spawnOffset;
+				var a = self.World.CreateActor(false, info.UnitType, new TypeDictionary
+				{
+					new CenterPositionInit(spawnPos),
+					new OwnerInit(self.Owner),
+					new FacingInit(facing.Value),
+				});
+
+				aircraft.Add(a);
+				aircraftInRange.Add(a, false);
+
+				var interceptor = a.Trait<Interceptor>();
+				interceptor.Initialize(self.World, targetPos, targetOffset, spawnPos, info.GuardRadius, info.GuardDuration);
+				interceptor.OnEnteredAttackRange += onEnterRange;
+				interceptor.OnExitedAttackRange += onExitRange;
+				interceptor.OnRemovedFromWorld += onRemovedFromWorld;
+			}
+
+			self.World.AddFrameEndTask(w =>
+			{
+				var j = 0;
+				Actor distanceTestActor = null;
+				for (var i = -info.SquadSize / 2; i <= info.SquadSize / 2; i++)
+				{
+					// Even-sized squads skip the lead plane
+					if (i == 0 && (info.SquadSize & 1) == 0)
+						continue;
+
+					// Includes the 90 degree rotation between body and world coordinates
+					var so = info.SquadOffset;
+					var spawnOffset = new WVec(i * so.Y, -Math.Abs(i) * so.X, 0).Rotate(attackRotation);
+					var a = aircraft[j++];
+					w.Add(a);
+
+					if (distanceTestActor == null)
+						distanceTestActor = a;
+				}
+
+				if (Info.DisplayBeacon)
+				{
+					var distance = (targetPos - startEdge).HorizontalLength;
+
+					beacon = new Beacon(
+						self.Owner,
+						targetPos - new WVec(0, 0, altitude),
+						Info.BeaconPaletteIsPlayerPalette,
+						Info.BeaconPalette,
+						Info.BeaconImage,
+						Info.BeaconPoster,
+						Info.BeaconPosterPalette,
+						Info.BeaconSequence,
+						Info.ArrowSequence,
+						Info.CircleSequence,
+						Info.ClockSequence,
+						() => 1 - ((distanceTestActor.CenterPosition - targetPos).HorizontalLength - info.BeaconDistanceOffset.Length) * 1f / distance,
+						Info.BeaconDelay);
+
+					w.Add(beacon);
+				}
+			});
+
+			return aircraft.ToArray();
+		}
+
+		void RemoveCamera(Actor camera)
+		{
+			if (camera == null)
+				return;
+
+			camera.QueueActivity(new RemoveSelf());
+		}
+
+		void RemoveBeacon(Beacon beacon)
+		{
+			if (beacon == null)
+				return;
+
+			Self.World.AddFrameEndTask(w => w.Remove(beacon));
+		}
+	}
+}

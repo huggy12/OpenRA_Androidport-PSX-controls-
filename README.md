@@ -12,6 +12,8 @@ with a Bluetooth controller using console-style controls inspired by the PlaySta
 
 *Skirmish on a vivo phone (Snapdragon, Android 16) with a GameSir G8+ controller.*
 
+**New: [Combined Arms for Android](#combined-arms-for-android)** with the same controller and touch controls.
+
 This is an unofficial fork. It is not endorsed by or affiliated with the OpenRA project or EA, and it does not
 include any Red Alert game files: on first launch the game's content installer downloads the freeware files.
 
@@ -126,12 +128,45 @@ On menus and the sidebar a tap is a click and a drag works sliders and scrollbar
 sidebar build icon puts production on hold / cancels it. Touch controls use the "Classic" mouse style and hide
 the cursor until you use a controller or mouse again. They work together with a controller.
 
+## Combined Arms for Android
+
+![Combined Arms main menu on a vivo phone](docs/combined-arms-menu.jpg)
+
+The [Combined Arms](https://github.com/Inq8/CAmod) mod for OpenRA, with the same PlayStation-style controller controls
+and touch controls as the Red Alert app. It installs as a separate app called **Combined Arms**, next to Red Alert.
+
+**APK: [`CombinedArms-android.apk`](https://github.com/huggy12/OpenRA_Androidport-PSX-controls-/releases/download/ca-1.0/CombinedArms-android.apk)** (from the [`ca-1.0` release](https://github.com/huggy12/OpenRA_Androidport-PSX-controls-/releases/tag/ca-1.0), about 233 MB)
+
+1. Download the APK on your phone and install it like the Red Alert one (allow "install unknown apps").
+2. Start **Combined Arms**. On first launch choose **Quick Install**: it downloads the freeware Red Alert and
+   Tiberian Dawn files that CA builds on (needs internet).
+3. The first start after installing or updating takes a little longer while the game data is unpacked.
+   After that it takes about 30 seconds to reach the main menu; CA is a much bigger mod than Red Alert.
+
+The APK is large because it includes CA's own music, sounds, maps and missions. Same requirements as the Red Alert app.
+
+**Controls:** the same as [Red Alert](#controls), with these differences:
+- **L1 / LB** cycles the production types (buildings, defences, infantry, vehicles, aircraft, naval).
+- With several factories of one type, CA shows numbered factory tabs above the build icons: move the cursor up from
+  the build icons to reach them and press Cross / A to switch factory.
+- **Triangle / Y twice** jumps to CA's special abilities bar, which scrolls: only the abilities shown in it can be picked.
+
+**Online play:** this build comes from CA's development code (master branch) and reports its version as
+`prep-CA`, so it can't join PC players on an official CA release. Online play hasn't been tested.
+
+**How it's built:** CA runs on its own OpenRA engine fork ([`Inq8/OpenRA`, branch `ca-engine/1.09`](https://github.com/Inq8/OpenRA/tree/ca-engine/1.09)),
+which is older than the bleed engine used for Red Alert. The same Android, controller and touch changes are applied to it, and CA's own HUD
+and widgets are set up for the controller. Map rules are now loaded only when a map is used, which cut startup on a phone from about
+95 to about 30 seconds. See [`CA.Android/README.md`](CA.Android/README.md) for the details.
+
 ## Layout
 
 | Path | Contents |
 |------|----------|
 | `OpenRA-bleed/OpenRA-bleed/` | The OpenRA engine, with Android and gamepad changes (see the second commit for the full diff) |
 | `OpenRA.Android/` | The Android app (.NET 10 for Android): SDL activity, app entry point, packaging and phone test scripts. Its README lists the controller controls |
+| `CAmod-master/CAmod-master/` | The Combined Arms mod; its `engine/` folder is the CA engine fork with the Android and gamepad changes |
+| `CA.Android/` | The Combined Arms Android app (same structure as `OpenRA.Android/`) |
 | `native/` | CMake projects and build script for the native libraries (SDL2, OpenAL Soft, FreeType, Lua 5.1 and the `libmain.so` bridge) |
 | `scripts/setup-toolchain.sh` | Downloads the toolchain into `tools/` (not committed) |
 
@@ -141,10 +176,12 @@ the cursor until you use a controller or mouse again. They work together with a 
 scripts/setup-toolchain.sh     # once: .NET 10 + Android workload, JDK 17, Android SDK/NDK, CMake, Ninja, library sources
 native/build-native.sh         # once: native libraries for arm64-v8a
 OpenRA.Android/build-apk.sh    # builds OpenRA.Android/bin/Release/net10.0-android/net.openra.android.ra-Signed.apk
+CA.Android/build-apk.sh        # builds CA.Android/bin/Release/net10.0-android/net.openra.android.ca-Signed.apk
 ```
 
 With a phone connected over USB debugging, `OpenRA.Android/run-on-phone.sh` builds, installs, launches and reports crashes.
 To publish a new build, copy the signed APK over `apk/OpenRA-RedAlert-android.apk` and commit it.
+The Combined Arms APK is too big for a normal git file (GitHub's limit is 100 MB), so it is published as a GitHub release asset instead.
 
 ## Engine changes
 
@@ -161,4 +198,5 @@ To publish a new build, copy the signed APK over `apk/OpenRA-RedAlert-android.ap
 ## License
 
 OpenRA is licensed under the GNU GPL v3 (see `OpenRA-bleed/OpenRA-bleed/COPYING`); the changes here are under the same license.
+Combined Arms is licensed under the GNU GPL v3 (see `CAmod-master/CAmod-master/COPYING`); it is by Inq and the CA contributors, and the changes here are under the same license.
 SDL2 (zlib), OpenAL Soft (LGPL), FreeType (FTL) and Lua (MIT) are built from their upstream sources.

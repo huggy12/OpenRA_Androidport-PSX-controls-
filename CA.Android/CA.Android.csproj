@@ -1,0 +1,58 @@
+<Project Sdk="Microsoft.NET.Sdk">
+	<PropertyGroup>
+		<TargetFramework>net10.0-android</TargetFramework>
+		<SupportedOSPlatformVersion>24</SupportedOSPlatformVersion>
+		<OutputType>Exe</OutputType>
+		<RootNamespace>OpenRAAndroid</RootNamespace>
+		<AssemblyName>CA.Android</AssemblyName>
+		<ApplicationId>net.openra.android.ca</ApplicationId>
+		<ApplicationTitle>Combined Arms</ApplicationTitle>
+		<ApplicationVersion>1</ApplicationVersion>
+		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+		<RuntimeIdentifiers>android-arm64</RuntimeIdentifiers>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<Nullable>disable</Nullable>
+		<ImplicitUsings>disable</ImplicitUsings>
+		<LangVersion>13</LangVersion>
+		<AndroidPackageFormat>apk</AndroidPackageFormat>
+		<EmbedAssembliesIntoApk>true</EmbedAssembliesIntoApk>
+		<!-- The game data archive is mostly already-compressed audio, so don't compress it again -->
+		<AndroidStoreUncompressedFileExtensions>.zip</AndroidStoreUncompressedFileExtensions>
+
+		<!-- OpenRA relies heavily on reflection, so the trimmer must not remove "unused" code -->
+		<PublishTrimmed>false</PublishTrimmed>
+		<AndroidLinkMode>None</AndroidLinkMode>
+		<RunAOTCompilation>false</RunAOTCompilation>
+		<AndroidEnableProfiledAot>false</AndroidEnableProfiledAot>
+		<!-- Marshal methods (on by default in Release) leave Java callbacks unregistered without AOT, so use dynamic JNI registration -->
+		<AndroidEnableMarshalMethods>false</AndroidEnableMarshalMethods>
+
+		<!-- Prevent the referenced OpenRA projects from pulling in desktop native libraries -->
+		<TargetPlatform>android-arm64</TargetPlatform>
+
+		<!-- Paths to the native libraries and game data prepared by build-apk.sh -->
+		<NativeLibDir>$(MSBuildThisFileDirectory)..\native\out\</NativeLibDir>
+		<EngineDataZip>$(MSBuildThisFileDirectory)obj\engine.zip</EngineDataZip>
+		<CADir>$(MSBuildThisFileDirectory)..\CAmod-master\CAmod-master\</CADir>
+		<OpenRADir>$(CADir)engine\</OpenRADir>
+	</PropertyGroup>
+
+	<ItemGroup>
+		<ProjectReference Include="$(OpenRADir)OpenRA.Game\OpenRA.Game.csproj" />
+		<ProjectReference Include="$(OpenRADir)OpenRA.Platforms.Default\OpenRA.Platforms.Default.csproj" />
+		<ProjectReference Include="$(OpenRADir)OpenRA.Mods.Common\OpenRA.Mods.Common.csproj" />
+		<ProjectReference Include="$(OpenRADir)OpenRA.Mods.Cnc\OpenRA.Mods.Cnc.csproj" />
+		<ProjectReference Include="$(CADir)OpenRA.Mods.CA\OpenRA.Mods.CA.csproj" />
+	</ItemGroup>
+
+	<ItemGroup>
+		<!-- SDL's Java glue (java/ is picked up automatically) is compiled into the APK, but no C# bindings are needed -->
+		<AndroidJavaSource Update="java\**\*.java">
+			<Bind>false</Bind>
+		</AndroidJavaSource>
+
+		<AndroidNativeLibrary Include="$(NativeLibDir)arm64-v8a\*.so" Abi="arm64-v8a" />
+
+		<AndroidAsset Include="$(EngineDataZip)" Link="Assets\engine.zip" />
+	</ItemGroup>
+</Project>

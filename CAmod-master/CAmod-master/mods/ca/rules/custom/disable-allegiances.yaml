@@ -1,0 +1,14 @@
+Player:
+	-ProvidesPrerequisitesOnCount@ScrinAllegiances:
+
+loyalist.allegiance:
+	Inherits@CAMPAIGNDISABLED: ^Disabled
+
+rebel.allegiance:
+	Inherits@CAMPAIGNDISABLED: ^Disabled
+
+malefic.allegiance:
+	Inherits@CAMPAIGNDISABLED: ^Disabled
+
+allegiance.upgrade:
+	Inherits@CAMPAIGNDISABLED: ^Disabled
