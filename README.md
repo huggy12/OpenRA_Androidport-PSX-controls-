@@ -1,4 +1,4 @@
-# OpenRA Red Alert for Android
+# OpenRA Red Alert for Android (Combined Arms too, scroll down)
 
 A personal port of [OpenRA](https://github.com/OpenRA/OpenRA) to Android, based on the bleed branch at commit
 [`b4d95a5`](https://github.com/OpenRA/OpenRA/commit/b4d95a56717d8d0070f195e343f6c2728ce87900) (November 2026), playing the Red Alert mod
