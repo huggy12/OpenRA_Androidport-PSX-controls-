@@ -149,8 +149,10 @@ The APK is large because it includes CA's own music, sounds, maps and missions. 
 - **L1 / LB** cycles the production types (buildings, defences, infantry, vehicles, aircraft, naval).
 - With several factories of one type, CA shows numbered factory tabs above the build icons: move the cursor up from
   the build icons to reach them and press Cross / A to switch factory.
-- **Scrolling the build menu:** press down on the bottom row of build icons (or up on the top row) to scroll to more
-  items, or push the right stick up or down while the cursor is on the icons. **Touch:** drag up or down on the icons.
+- **Scrolling the build menu:** on phone screens the build menu shows as many rows as fit, and an arrow on its bottom
+  (or top) edge shows when more items are hidden there. Press down on the bottom row of build icons (or up on the top
+  row) to scroll to them, or push the right stick up or down while the cursor is on the icons. **Touch:** drag up or
+  down on the icons.
 - **Triangle / Y twice** jumps to CA's special abilities bar, which scrolls in the same way when it holds more abilities
   than fit on screen.
 

@@ -35,7 +35,10 @@ It uses the same console-style Bluetooth controller controls and touch controls 
   cursor up from the build icons in the sidebar to reach them, and press Cross / A to switch factory.
 - The build palette scrolls: stepping down from its bottom row (or up from its top row) scrolls by one row, and the
   right stick scrolls it while the cursor is on it. With touch controls, drag up or down on the icons.
-  CA's special abilities bar (Triangle / Y twice) scrolls the same way. Widgets opt in through
+  CA's special abilities bar (Triangle / Y twice) scrolls the same way.
+  `ClassicProductionLogic` limits the palette to the rows that fit on screen (CA's layout gives `SIDEBAR_PRODUCTION`
+  no position, so the engine's own check let 5 rows run off a phone screen), and the palette draws an up / down arrow
+  (`scrollpanel-decorations`) on its edges while more items are hidden. Widgets opt in through
   `Widget.ScrollListRowSize` / `ScrollListRows` / `ShouldGamepadScrollList` (`ProductionPaletteWidget.cs`,
   `SupportPowersScrollableWidget.cs`).
 

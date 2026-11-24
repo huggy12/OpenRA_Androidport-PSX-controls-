@@ -225,6 +225,14 @@ namespace OpenRA.Mods.Common.Widgets.Logic
 			var maxItemsHeight = screenHeight - sidebarProductionHeight;
 
 			var maxIconRowOffest = maxItemsHeight / productionPalette.IconSize.Y - 1;
+
+			// Also measure from where the palette really is on screen. Layouts that nest the palette inside the sidebar
+			// (e.g. Combined Arms) give SIDEBAR_PRODUCTION no position of its own, so on short screens (phones) the
+			// bottom rows would be drawn off-screen and the palette would never scroll to show them.
+			var rowHeight = productionPalette.IconSize.Y + productionPalette.IconMargin.Y;
+			var rowsOnScreen = (screenHeight - productionPalette.RenderBounds.Y + productionPalette.IconMargin.Y) / rowHeight;
+			maxIconRowOffest = Math.Min(maxIconRowOffest, Math.Max(1, rowsOnScreen));
+
 			productionPalette.MaxIconRowOffset = Math.Min(maxIconRowOffest, productionPalette.MaximumRows);
 		}
 	}

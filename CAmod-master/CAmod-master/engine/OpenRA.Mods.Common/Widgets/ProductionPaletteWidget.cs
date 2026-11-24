@@ -122,6 +122,13 @@ namespace OpenRA.Mods.Common.Widgets
 		Animation clock;
 		Rectangle eventBounds = Rectangle.Empty;
 
+		[Desc("Image collection with `up` and `down` arrows, shown on the palette's edges while it can scroll.")]
+		public readonly string ScrollIndicatorImages = "scrollpanel-decorations";
+
+		public readonly int2 ScrollIndicatorSize = new(34, 18);
+
+		public readonly Color ScrollIndicatorBackground = Color.FromArgb(200, 0, 0, 0);
+
 		readonly WorldRenderer worldRenderer;
 
 		SpriteFont overlayFont, symbolFont;
@@ -652,6 +659,39 @@ namespace OpenRA.Mods.Common.Widgets
 					}
 				}
 			}
+
+			DrawScrollIndicators();
+		}
+
+		/// <summary>
+		/// Shows that the palette scrolls: an arrow on its bottom (top) edge while more items are hidden below (above),
+		/// e.g. when a phone screen only fits a few rows.
+		/// </summary>
+		void DrawScrollIndicators()
+		{
+			if (icons.Count == 0 || (!CanScrollUp && !CanScrollDown))
+				return;
+
+			// Bob the arrows gently so they catch the eye
+			var bob = (float)Math.Round(1.5 * Math.Sin(Game.RunTime / 250.0));
+			var centerX = eventBounds.X + eventBounds.Width / 2;
+			if (CanScrollUp)
+				DrawScrollIndicator("up", new int2(centerX, eventBounds.Top), -bob);
+
+			if (CanScrollDown)
+				DrawScrollIndicator("down", new int2(centerX, eventBounds.Bottom), bob);
+		}
+
+		void DrawScrollIndicator(string image, int2 edgeCenter, float bob)
+		{
+			var arrow = ChromeProvider.TryGetImage(ScrollIndicatorImages, image);
+			if (arrow == null)
+				return;
+
+			var size = ScrollIndicatorSize;
+			var background = new Rectangle(edgeCenter.X - size.X / 2, edgeCenter.Y - size.Y / 2, size.X, size.Y);
+			WidgetUtils.FillRectWithColor(background, ScrollIndicatorBackground);
+			WidgetUtils.DrawSprite(arrow, new float2(edgeCenter.X - arrow.Size.X / 2, edgeCenter.Y - arrow.Size.Y / 2 + bob));
 		}
 
 		public override string GetCursor(int2 pos)
