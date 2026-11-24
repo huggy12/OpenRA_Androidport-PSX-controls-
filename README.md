@@ -135,7 +135,7 @@ the cursor until you use a controller or mouse again. They work together with a 
 The [Combined Arms](https://github.com/Inq8/CAmod) mod for OpenRA, with the same PlayStation-style controller controls
 and touch controls as the Red Alert app. It installs as a separate app called **Combined Arms**, next to Red Alert.
 
-**APK: [`CombinedArms-android.apk` on MEGA](https://mega.nz/file/FrRXjYgb#K4ohEAeaEPp2Kx8mWM99x8Zrh10vORkZdjhdDdusUa8)** (version 1.1, about 233 MB)
+**APK: [`CombinedArms-android.apk` on MEGA](https://mega.nz/file/FrRXjYgb#K4ohEAeaEPp2Kx8mWM99x8Zrh10vORkZdjhdDdusUa8)** (version 1.2, about 233 MB)
 
 1. Download the APK on your phone and install it like the Red Alert one (allow "install unknown apps").
 2. Start **Combined Arms**. On first launch choose **Quick Install**: it downloads the freeware Red Alert and
