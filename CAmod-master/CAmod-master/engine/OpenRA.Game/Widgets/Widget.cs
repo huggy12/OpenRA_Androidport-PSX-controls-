@@ -461,6 +461,21 @@ namespace OpenRA.Widgets
 		public virtual bool GamepadFreeCursor => false;
 
 		/// <summary>
+		/// Gamepad / touch: the size in pixels of one row of a scrollable list of items (e.g. the build palette),
+		/// or 0 if this widget isn't one. Dragging a finger this far scrolls the list by one row.
+		/// </summary>
+		public virtual int ScrollListRowSize => 0;
+
+		/// <summary>Gamepad / touch: scrolls the list by whole rows (positive towards later items). Returns true if it scrolled.</summary>
+		public virtual bool ScrollListRows(int rows) { return false; }
+
+		/// <summary>
+		/// Gamepad: true if stepping from the item at the position in the given direction (one of the four unit
+		/// directions) would leave the visible part of the list while more items lie that way, so it should scroll instead.
+		/// </summary>
+		public virtual bool ShouldGamepadScrollList(int2 position, int2 direction) { return false; }
+
+		/// <summary>
 		/// Touch controls: moves the camera to the touched position (e.g. on a minimap) instead of clicking.
 		/// Returns false if touches here should be treated as normal clicks.
 		/// </summary>

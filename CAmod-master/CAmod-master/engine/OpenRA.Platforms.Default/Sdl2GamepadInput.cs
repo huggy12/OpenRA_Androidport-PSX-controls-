@@ -74,6 +74,9 @@ namespace OpenRA.Platforms.Default
 		const float LockCheckInterval = 0.1f;
 		const float MenuScrollInterval = 0.12f;
 
+		// How often the right stick scrolls a list of icons (e.g. the build palette) by one row
+		const float ListScrollInterval = 0.2f;
+
 		// Two presses of Y / Triangle within this time open the support powers
 		const double DoublePressTime = 0.4;
 
@@ -294,7 +297,8 @@ namespace OpenRA.Platforms.Default
 			var dpad = new int2(dpadX, dpadY);
 			bool edgeUp = false, edgeDown = false, edgeLeft = false, edgeRight = false;
 
-			if (IsOverInterface())
+			var overInterface = IsOverInterface();
+			if (overInterface)
 			{
 				// In the sidebar / command bar (entered with Y / Triangle) the cursor is locked to the buttons
 				NavigateLockedCursor(now, leftStick, dpad, false, inputHandler, mods);
@@ -337,9 +341,23 @@ namespace OpenRA.Platforms.Default
 				edgeRight = pushX > 0 && (cursor.X >= screen.Width - 1 || blocked.X > 0);
 			}
 
+			// Over a scrollable list (e.g. the build palette) the right stick scrolls the list instead of the map
+			var scrollingList = false;
+			if (overInterface && Math.Abs(rightStick.Y) > ScrollThreshold && GamepadNavigation.ScrollListAt(CursorPosition) is Widget list)
+			{
+				scrollingList = true;
+				if (now >= nextMenuScrollTime)
+				{
+					if (list.ScrollListRows(rightStick.Y > 0 ? 1 : -1))
+						SendMotion(inputHandler, mods);
+
+					nextMenuScrollTime = now + ListScrollInterval;
+				}
+			}
+
 			// Right stick scrolls the map directly. Both use the keyboard scroll hotkeys.
-			SetScrollKey(0, rightStick.Y < -ScrollThreshold || edgeUp, inputHandler, mods);
-			SetScrollKey(1, rightStick.Y > ScrollThreshold || edgeDown, inputHandler, mods);
+			SetScrollKey(0, (!scrollingList && rightStick.Y < -ScrollThreshold) || edgeUp, inputHandler, mods);
+			SetScrollKey(1, (!scrollingList && rightStick.Y > ScrollThreshold) || edgeDown, inputHandler, mods);
 			SetScrollKey(2, rightStick.X < -ScrollThreshold || edgeLeft, inputHandler, mods);
 			SetScrollKey(3, rightStick.X > ScrollThreshold || edgeRight, inputHandler, mods);
 		}
@@ -536,6 +554,14 @@ namespace OpenRA.Platforms.Default
 		{
 			try
 			{
+				// On the first / last visible row of a scrollable list (e.g. the build palette), scroll it instead of leaving it.
+				// The cursor stays put and the next items move under it.
+				if (GamepadNavigation.TryScrollListAt(CursorPosition, direction))
+				{
+					SendMotion(inputHandler, mods);
+					return;
+				}
+
 				// Steps between all HUD buttons, so the cursor can move from the support powers to the sidebar or command bar
 				var target = GamepadNavigation.FindTarget(CursorPosition, direction, false);
 				if (target != null)

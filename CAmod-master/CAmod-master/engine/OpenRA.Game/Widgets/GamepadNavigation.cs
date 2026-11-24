@@ -121,6 +121,33 @@ namespace OpenRA.Widgets
 		}
 
 		/// <summary>Finds the button inside a zone that is closest to the given position.</summary>
+		/// <summary>Returns the scrollable list (e.g. the build palette) under the position, or null.</summary>
+		public static Widget ScrollListAt(int2 position)
+		{
+			var hit = HitTest(Ui.Root, position);
+			return hit != null && hit.ScrollListRowSize > 0 ? hit : null;
+		}
+
+		/// <summary>
+		/// Gamepad: if the cursor is on the first or last visible row of a scrollable list and steps past it,
+		/// scrolls the list instead (the cursor stays put and the next items move under it). Returns true if it scrolled.
+		/// </summary>
+		public static bool TryScrollListAt(int2 position, Vector2 direction)
+		{
+			if (direction == Vector2.Zero)
+				return false;
+
+			var list = ScrollListAt(position);
+			if (list == null)
+				return false;
+
+			var step = Math.Abs(direction.Y) >= Math.Abs(direction.X)
+				? new int2(0, Math.Sign(direction.Y))
+				: new int2(Math.Sign(direction.X), 0);
+
+			return list.ShouldGamepadScrollList(position, step) && list.ScrollListRows(step.X + step.Y);
+		}
+
 		public static int2? NearestTargetInZone(string zone, int2 from)
 		{
 			if (!GetZones().TryGetValue(zone, out var bounds))

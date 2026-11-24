@@ -149,7 +149,13 @@ The APK is large because it includes CA's own music, sounds, maps and missions. 
 - **L1 / LB** cycles the production types (buildings, defences, infantry, vehicles, aircraft, naval).
 - With several factories of one type, CA shows numbered factory tabs above the build icons: move the cursor up from
   the build icons to reach them and press Cross / A to switch factory.
-- **Triangle / Y twice** jumps to CA's special abilities bar, which scrolls: only the abilities shown in it can be picked.
+- **Scrolling the build menu:** press down on the bottom row of build icons (or up on the top row) to scroll to more
+  items, or push the right stick up or down while the cursor is on the icons. **Touch:** drag up or down on the icons.
+- **Triangle / Y twice** jumps to CA's special abilities bar, which scrolls in the same way when it holds more abilities
+  than fit on screen.
+
+**Sleep:** when the phone sleeps or you switch to another app, the game freezes and its sound stops, so it doesn't use
+the battery in the background. It carries on where it left off when you come back.
 
 **Online play:** this build comes from CA's development code (master branch) and reports its version as
 `prep-CA`, so it can't join PC players on an official CA release. Online play hasn't been tested.

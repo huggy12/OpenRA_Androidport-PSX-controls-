@@ -133,6 +133,8 @@ namespace OpenRA.Platforms.Default
 			context = ALC10.alcCreateContext(device, null);
 			if (context == IntPtr.Zero)
 				throw new InvalidOperationException("Can't create OpenAL context");
+
+			AndroidAppLifecycle.SetAudioDevice(device);
 			ALC10.alcMakeContextCurrent(context);
 
 			for (var i = 0; i < PoolSize; i++)
@@ -385,6 +387,7 @@ namespace OpenRA.Platforms.Default
 
 			if (device != IntPtr.Zero)
 			{
+				AndroidAppLifecycle.SetAudioDevice(IntPtr.Zero);
 				ALC10.alcCloseDevice(device);
 				device = IntPtr.Zero;
 			}

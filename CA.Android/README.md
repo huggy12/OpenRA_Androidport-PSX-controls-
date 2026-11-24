@@ -33,7 +33,17 @@ It uses the same console-style Bluetooth controller controls and touch controls 
   The gamepad sends F14 for this, because CA already uses Page Down to switch between factory tabs.
 - When you have several factories of one type, CA shows numbered factory tabs above the build icons. Move the
   cursor up from the build icons in the sidebar to reach them, and press Cross / A to switch factory.
-- Special abilities (Triangle / Y twice) can only reach the abilities currently shown in CA's scrollable bar.
+- The build palette scrolls: stepping down from its bottom row (or up from its top row) scrolls by one row, and the
+  right stick scrolls it while the cursor is on it. With touch controls, drag up or down on the icons.
+  CA's special abilities bar (Triangle / Y twice) scrolls the same way. Widgets opt in through
+  `Widget.ScrollListRowSize` / `ScrollListRows` / `ShouldGamepadScrollList` (`ProductionPaletteWidget.cs`,
+  `SupportPowersScrollableWidget.cs`).
+
+## Sleep and background
+
+SDL freezes the game thread while the app is paused (screen off, home button), and `AndroidAppLifecycle.cs` pauses the
+OpenAL device at the same time (it would otherwise keep its output stream and mixer thread running). On a vivo phone
+the app then uses no measurable CPU and its audio stream shows as stopped. The game resumes where it left off.
 
 ## First launch
 

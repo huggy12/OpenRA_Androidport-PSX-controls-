@@ -26,7 +26,8 @@ namespace OpenRA.Platforms.Default
 	/// the selected units to that spot, one finger drag scrolls the map, and two fingers drag a selection box
 	/// (from the first finger to the second).
 	/// On menus and the HUD: a tap is a click and a drag is a mouse drag (sliders, scrollbars).
-	/// Holding a finger on the build sidebar is a right click (hold / cancel production).
+	/// Holding a finger on the build sidebar is a right click (hold / cancel production), and dragging up or down
+	/// on the build palette (or another list of icons) scrolls it.
 	/// While disabled, SDL's default touch handling (a tap is a left click) is left untouched.
 	/// </remarks>
 	sealed class Sdl2TouchInput
@@ -40,7 +41,7 @@ namespace OpenRA.Platforms.Default
 		// Where the (invisible) pointer goes when the last finger lifts, so nothing stays hovered and no tooltips linger
 		static readonly int2 LiftedPosition = new(-10000, -10000);
 
-		enum Gesture { None, Pending, Pan, Drag, Box, MoveView, Finished }
+		enum Gesture { None, Pending, Pan, Drag, Box, MoveView, ScrollList, Finished }
 
 		readonly Dictionary<long, Vector2> fingers = [];
 		readonly Stopwatch clock = Stopwatch.StartNew();
@@ -51,6 +52,10 @@ namespace OpenRA.Platforms.Default
 		Vector2 start;
 		double startTime;
 		bool startOnWorld;
+
+		// The list of icons (e.g. the build palette) being scrolled by dragging, and where the finger was when it last scrolled
+		Widget scrollList;
+		float scrollAnchorY;
 		MouseButton heldButtons;
 		int2 lastSentPosition;
 
@@ -223,6 +228,15 @@ namespace OpenRA.Platforms.Default
 						gesture = Gesture.Pan;
 						GamepadNavigation.ScrollWorldView(start - position);
 					}
+					else if (Math.Abs(position.Y - start.Y) >= Math.Abs(position.X - start.X)
+						&& GamepadNavigation.ScrollListAt(ToInt2(start)) is Widget list)
+					{
+						// Dragging up or down on the build palette scrolls it (without clicking the icon under the finger)
+						gesture = Gesture.ScrollList;
+						scrollList = list;
+						scrollAnchorY = start.Y;
+						ScrollListTo(position);
+					}
 					else
 					{
 						// Drag sliders, scrollbars, etc.
@@ -239,6 +253,10 @@ namespace OpenRA.Platforms.Default
 
 				case Gesture.MoveView when id == primaryFinger:
 					GamepadNavigation.TouchMoveViewAt(ToInt2(position));
+					break;
+
+				case Gesture.ScrollList when id == primaryFinger:
+					ScrollListTo(position);
 					break;
 
 				case Gesture.Drag when id == primaryFinger:
@@ -263,7 +281,9 @@ namespace OpenRA.Platforms.Default
 
 				case Gesture.Pan when id == primaryFinger:
 				case Gesture.MoveView when id == primaryFinger:
+				case Gesture.ScrollList when id == primaryFinger:
 					gesture = Gesture.Finished;
+					scrollList = null;
 					break;
 
 				case Gesture.Drag when id == primaryFinger:
@@ -298,6 +318,24 @@ namespace OpenRA.Platforms.Default
 
 			fingers.Clear();
 			gesture = Gesture.None;
+			scrollList = null;
+		}
+
+		/// <summary>Scrolls the dragged list by a row for every row height the finger has moved (the items follow the finger).</summary>
+		void ScrollListTo(Vector2 position)
+		{
+			var rowSize = scrollList?.ScrollListRowSize ?? 0;
+			if (rowSize <= 0)
+				return;
+
+			var rows = (int)((scrollAnchorY - position.Y) / rowSize);
+			if (rows == 0)
+				return;
+
+			scrollList.ScrollListRows(rows);
+
+			// Measure the next row from here, even at the end of the list, so reversing direction responds immediately
+			scrollAnchorY -= rows * rowSize;
 		}
 
 		static int2 ToInt2(Vector2 v) => new((int)v.X, (int)v.Y);

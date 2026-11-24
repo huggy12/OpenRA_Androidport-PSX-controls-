@@ -7,8 +7,8 @@
 		<AssemblyName>CA.Android</AssemblyName>
 		<ApplicationId>net.openra.android.ca</ApplicationId>
 		<ApplicationTitle>Combined Arms</ApplicationTitle>
-		<ApplicationVersion>1</ApplicationVersion>
-		<ApplicationDisplayVersion>1.0</ApplicationDisplayVersion>
+		<ApplicationVersion>2</ApplicationVersion>
+		<ApplicationDisplayVersion>1.1</ApplicationDisplayVersion>
 		<RuntimeIdentifiers>android-arm64</RuntimeIdentifiers>
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<Nullable>disable</Nullable>

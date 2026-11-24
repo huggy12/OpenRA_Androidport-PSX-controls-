@@ -84,6 +84,36 @@ namespace OpenRA.Mods.CA.Widgets
 		{
 			targets.AddRange(icons.Keys);
 		}
+
+		// Gamepad / touch scrolling (vertical lists only)
+		public override int ScrollListRowSize => Horizontal ? 0 : IconSize.Y + IconMargin;
+
+		public override bool ScrollListRows(int rows)
+		{
+			var start = Math.Clamp(CurrentStartIndex + rows, 0, Math.Max(0, IconCount - MaxPowersVisible));
+			if (Horizontal || start == CurrentStartIndex)
+				return false;
+
+			Scroll(start - CurrentStartIndex);
+
+			// Update the icon positions now, so gamepad navigation sees the new icons straight away
+			RefreshIcons();
+			return true;
+		}
+
+		public override bool ShouldGamepadScrollList(int2 position, int2 direction)
+		{
+			if (Horizontal || direction.Y == 0)
+				return false;
+
+			var canScroll = direction.Y > 0 ? CurrentStartIndex + MaxPowersVisible < IconCount : CurrentStartIndex > 0;
+			if (!canScroll)
+				return false;
+
+			// Only scroll from the first / last visible icon
+			var current = icons.Keys.FirstOrDefault(r => r.Contains(position));
+			return current != Rectangle.Empty && !icons.Keys.Any(r => direction.Y > 0 ? r.Top > current.Top : r.Top < current.Top);
+		}
 		SpriteFont overlayFont;
 		readonly float2 stackCountMargin = new(2, 2);
 		float2 iconOffset, holdOffset, readyOffset, timeOffset;

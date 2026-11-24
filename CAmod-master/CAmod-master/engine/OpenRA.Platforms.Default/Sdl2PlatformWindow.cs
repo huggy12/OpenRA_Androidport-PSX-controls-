@@ -177,6 +177,9 @@ namespace OpenRA.Platforms.Default
 				if (SDL.SDL_Init(SDL.SDL_INIT_VIDEO | SDL.SDL_INIT_GAMECONTROLLER) != 0)
 					Log.Write("graphics", $"SDL initialisation failed: {SDL.SDL_GetError()}");
 
+				// Android: pause the audio device while the phone sleeps / the app is in the background
+				AndroidAppLifecycle.Initialize();
+
 				SetSDLAttributes(profile);
 				Console.WriteLine($"Using SDL 2 with OpenGL ({profile}) renderer");
 				if (videoDisplay < 0 || videoDisplay >= DisplayCount)

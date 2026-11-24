@@ -265,6 +265,44 @@ namespace OpenRA.Mods.Common.Widgets
 			targets.AddRange(icons.Keys);
 		}
 
+		public override int ScrollListRowSize => IconSize.Y + IconMargin.Y;
+
+		public override bool ScrollListRows(int rows)
+		{
+			var scrolled = false;
+			for (; rows > 0 && CanScrollDown; rows--)
+			{
+				ScrollDown();
+				scrolled = true;
+			}
+
+			for (; rows < 0 && CanScrollUp; rows++)
+			{
+				ScrollUp();
+				scrolled = true;
+			}
+
+			if (scrolled)
+			{
+				// Update the icon positions now, so gamepad navigation sees the new rows straight away
+				RefreshIcons();
+				Ui.ResetTooltips();
+				Game.Sound.PlayNotification(World.Map.Rules, World.LocalPlayer, "Sounds", ClickSound, null);
+			}
+
+			return scrolled;
+		}
+
+		public override bool ShouldGamepadScrollList(int2 position, int2 direction)
+		{
+			if (direction.Y == 0 || (direction.Y > 0 ? !CanScrollDown : !CanScrollUp))
+				return false;
+
+			// Only scroll from the first / last visible row: otherwise step to the next row as usual
+			var current = icons.Keys.FirstOrDefault(r => r.Contains(position));
+			return current != Rectangle.Empty && !icons.Keys.Any(r => direction.Y > 0 ? r.Top > current.Top : r.Top < current.Top);
+		}
+
 		public override bool HandleMouseInput(MouseInput mi)
 		{
 			var icon = icons.Where(i => i.Key.Contains(mi.Location))
